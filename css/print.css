@@ -1,0 +1,72 @@
+/* ==========================================================================
+   PUJOLS SERVICIOS - ESTILOS DE IMPRESIÓN (PDF / TICKET)
+   ========================================================================== */
+
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 12pt;
+  }
+
+  /* Ocultar elementos de navegación y decorativos de la interfaz */
+  .app-sidebar,
+  .app-header,
+  .bottom-nav,
+  .drawer-backdrop,
+  .demo-badge-top,
+  .btn,
+  .modal-header .modal-close-btn,
+  .modal-footer {
+    display: none !important;
+  }
+
+  /* Mostrar solo el contenedor del modal abierto o el papel de factura */
+  .modal-backdrop {
+    position: static !important;
+    display: block !important;
+    background: none !important;
+    padding: 0 !important;
+    inset: auto !important;
+  }
+
+  .modal-content {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    animation: none !important;
+  }
+
+  .modal-body {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .invoice-paper {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .invoice-table th {
+    background-color: #0A2540 !important;
+    color: #FFFFFF !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .badge {
+    border: 1px solid #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .invoice-bottom-wave {
+    background: #0A2540 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "PUJOLS Servicios - Aire y Refrigeración",
+  "short_name": "PUJOLS Servicios",
+  "description": "Aplicación de administración para instalación, mantenimiento y reparación de aires acondicionados, neveras y lavadoras.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0A2540",
+  "theme_color": "#0A2540",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
+}

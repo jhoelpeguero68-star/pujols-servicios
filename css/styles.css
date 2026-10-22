@@ -1,0 +1,203 @@
+/* ==========================================================================
+   PUJOLS SERVICIOS - ESTILOS BASE Y VARIABLES DE MARCA
+   Colores oficiales: Azul Oscuro (#0A2540, #002B49), Turquesa (#00AEEF, #00B4D8), Blanco
+   ========================================================================== */
+
+:root {
+  /* Paleta Principal */
+  --color-primary: #0A2540;        /* Azul Marino Profundo PUJOLS */
+  --color-primary-dark: #06182B;   /* Azul Marino Extra Oscuro */
+  --color-primary-light: #163B61;  /* Azul Marino Suave */
+  --color-accent: #00AEEF;         /* Turquesa / Celeste Vibrante PUJOLS */
+  --color-accent-hover: #0098D4;   /* Turquesa Intenso */
+  --color-accent-light: #E0F5FE;   /* Turquesa Muy Claro para Fondos */
+  --color-secondary-blue: #0284C7; /* Azul Cielo Intermedio */
+
+  /* Colores de Estado y Acentos */
+  --color-success: #10B981;        /* Verde Éxito / Pagada */
+  --color-success-bg: #ECFDF5;
+  --color-warning: #F59E0B;        /* Amarillo / Naranja Pendiente */
+  --color-warning-bg: #FFFBEB;
+  --color-danger: #EF4444;         /* Rojo Alerta / Egresos */
+  --color-danger-bg: #FEF2F2;
+  --color-info: #0284C7;           /* Azul Programado */
+  --color-info-bg: #F0F9FF;
+  --color-lime: #84CC16;           /* Acento Verde Lima de la Marca */
+
+  /* Neutrales y Fondos */
+  --bg-app: #F4F7FB;               /* Fondo general fresco */
+  --bg-surface: #FFFFFF;           /* Blanco tarjetas */
+  --bg-surface-secondary: #F8FAFC; /* Blanco humo */
+  --border-color: #E2E8F0;         /* Bordes sutiles */
+  --border-color-focus: #00AEEF;
+
+  /* Tipografía y Textos */
+  --text-main: #0F172A;            /* Gris texto principal casi negro */
+  --text-muted: #64748B;           /* Gris texto secundario */
+  --text-light: #94A3B8;           /* Gris tenue */
+  --text-white: #FFFFFF;
+
+  /* Sombras y Elevaciones */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(10, 37, 64, 0.08), 0 2px 4px -2px rgba(10, 37, 64, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(10, 37, 64, 0.1), 0 4px 6px -4px rgba(10, 37, 64, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(10, 37, 64, 0.15), 0 8px 10px -6px rgba(10, 37, 64, 0.1);
+  --shadow-card: 0 2px 8px rgba(10, 37, 64, 0.06);
+
+  /* Medidas y Bordes */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 9999px;
+
+  /* Transiciones */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Tamaños de navegación */
+  --sidebar-width: 250px;
+  --header-height: 68px;
+  --bottom-nav-height: 64px;
+}
+
+/* Reset Universal */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  color: var(--text-main);
+  background-color: var(--bg-app);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tipografía Utilidades */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-primary);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+p {
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+/* Scrollbars estilizadas */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Iconos SVG inline */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.icon-stroke svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Utilidades generales */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.text-accent { color: var(--color-accent); }
+.text-primary { color: var(--color-primary); }
+.text-muted { color: var(--text-muted); }
+.text-success { color: var(--color-success); }
+.text-danger { color: var(--color-danger); }
+.text-warning { color: var(--color-warning); }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+
+/* Banner informativo Demo */
+.demo-badge-top {
+  background: linear-gradient(90deg, #0A2540 0%, #0284C7 100%);
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  padding: 5px 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+.demo-badge-top span.pill {
+  background: var(--color-accent);
+  color: #0A2540;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 800;
+}

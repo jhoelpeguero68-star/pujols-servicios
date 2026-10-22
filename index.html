@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0A2540">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PUJOLS Servicios">
+  <meta name="description" content="PUJOLS Servicios - Aplicación de administración para instalación, mantenimiento y reparación de aires acondicionados, neveras y lavadoras.">
+  
+  <title>PUJOLS Servicios - Aire y Refrigeración</title>
+  
+  <!-- Iconos y Manifiesto PWA -->
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Hojas de Estilo Modulares -->
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/print.css">
+</head>
+<body>
+
+  <!-- Barra de Notificación de Demostración -->
+  <div class="demo-badge-top">
+    <span>PUJOLS Servicios</span>
+    <span class="pill">DEMOSTRACIÓN</span>
+    <span>• Datos ficticios interactivos para demostración</span>
+  </div>
+
+  <!-- Banners de Estado de Conexión y Sincronización Offline -->
+  <div id="offlineNoticeBanner" style="display: none; background: #FEF3C7; color: #92400E; padding: 7px 14px; font-size: 12px; text-align: center; font-weight: 600; border-bottom: 1px solid #FCD34D; z-index: 100;">
+    ⚡ Modo sin conexión activo: Puedes registrar clientes, órdenes y facturas. Se guardan en el dispositivo y se sincronizarán al recuperar el internet.
+  </div>
+  <div id="onlineSyncSuccessBanner" style="display: none; background: #ECFDF5; color: #065F46; padding: 7px 14px; font-size: 12px; text-align: center; font-weight: 600; border-bottom: 1px solid #A7F3D0; z-index: 100;">
+    ✅ Conexión a internet restablecida: Registros sincronizados con la nube de Google Sheets y Drive.
+  </div>
+
+  <!-- Contenedor Raíz de la Aplicación -->
+  <div class="app-container">
+
+    <!-- Backdrop para menú móvil deslizable -->
+    <div id="drawerBackdrop" class="drawer-backdrop"></div>
+
+    <!-- ====================================================================
+         SIDEBAR / MENÚ LATERAL (ESCRITORIO Y TABLET / DRAWER MÓVIL)
+         ==================================================================== -->
+    <aside id="appSidebar" class="app-sidebar">
+      <!-- Encabezado con Logo Oficial de PUJOLS Servicios -->
+      <div class="sidebar-header">
+        <div class="brand-badge" onclick="App.navigate('inicio')">
+          <img src="assets/logo.jpg" alt="Logo PUJOLS Servicios" class="brand-logo-img">
+          <div class="brand-text-block">
+            <span class="brand-name">PUJOLS <span>Servicios</span></span>
+            <span class="brand-sub">Aire y Refrigeración</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navegación con los 8 Módulos Requeridos -->
+      <nav class="sidebar-nav">
+        <!-- 1. Inicio -->
+        <a class="nav-item active" data-screen="inicio" onclick="App.navigate('inicio')">
+          <span class="nav-icon icon">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </span>
+          <span>Inicio</span>
+        </a>
+
+        <!-- 2. Clientes -->
+        <a class="nav-item" data-screen="clientes" onclick="App.navigate('clientes')">
+          <span class="nav-icon icon">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          </span>
+          <span>Clientes</span>
+          <span class="nav-badge" id="navBadgeClientes">6</span>
+        </a>
+
+        <!-- 3. Equipos -->
+        <a class="nav-item" data-screen="equipos" onclick="App.navigate('equipos')">
+          <span class="nav-icon icon">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+          </span>
+          <span>Equipos</span>
+        </a>
+
+        <!-- 4. Servicios -->
+        <a class="nav-item" data-screen="servicios" onclick="App.navigate('servicios')">
+          <span class="nav-icon icon">
+            <svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+          </span>
+          <span>Servicios</span>
+        </a>
+
+        <!-- 5. Facturación -->
+        <a class="nav-item" data-screen="facturacion" onclick="App.navigate('facturacion')">
+          <span class="nav-icon icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          </span>
+          <span>Facturas</span>
+        </a>
+
+        <!-- 6. Finanzas -->
+        <a class="nav-item" data-screen="finanzas" onclick="App.navigate('finanzas')">
+          <span class="nav-icon icon">
+            <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+          </span>
+          <span>Finanzas</span>
+        </a>
+
+        <!-- 7. Recordatorios -->
+        <a class="nav-item" data-screen="recordatorios" onclick="App.navigate('recordatorios')">
+          <span class="nav-icon icon">
+            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+          </span>
+          <span>Recordatorios</span>
+        </a>
+
+        <!-- 8. Configuración -->
+        <a class="nav-item" data-screen="configuracion" onclick="App.navigate('configuracion')">
+          <span class="nav-icon icon">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          </span>
+          <span>Configuración</span>
+        </a>
+      </nav>
+
+      <!-- Pie del Sidebar con Versión y Lema Oficial -->
+      <div class="sidebar-footer">
+        <div class="sidebar-version">PUJOLS v1.0.0</div>
+        <div class="sidebar-slogan">Servicio confiable, equipos en buenas manos.</div>
+      </div>
+    </aside>
+
+    <!-- ====================================================================
+         ÁREA PRINCIPAL DE LA APLICACIÓN
+         ==================================================================== -->
+    <main class="app-main">
+      <!-- Encabezado Superior (Header) -->
+      <header class="app-header">
+        <div class="header-left">
+          <button id="menuToggleBtn" class="menu-toggle-btn" aria-label="Abrir Menú">
+            <span class="icon" style="width: 24px; height: 24px;">
+              <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </span>
+          </button>
+          <div class="header-titles">
+            <h1 id="headerTitle" class="header-title">PUJOLS Servicios</h1>
+            <p id="headerSubtitle" class="header-subtitle">Panel de Control y Resumen General</p>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Botón de Instalación PWA (se muestra cuando el navegador lo soporta) -->
+          <button id="btnInstallPWA" class="btn-install-pwa" onclick="App.promptInstallPWA()" style="display: none;">
+            <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg></span>
+            <span>Instalar App</span>
+          </button>
+
+          <!-- Selector de Fecha / Periodo -->
+          <div class="date-selector-pill">
+            <span class="icon" style="width: 16px; height: 16px; color: var(--color-accent);">
+              <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z"/></svg>
+            </span>
+            <span class="date-text">Octubre 2025</span>
+          </div>
+
+          <!-- Perfil de Usuario -->
+          <button class="user-avatar-btn" onclick="App.navigate('configuracion')">
+            <div class="user-avatar">MP</div>
+            <div class="user-info-text">
+              <span class="user-name">Marcos Pujols</span>
+              <span class="user-role">Administrador</span>
+            </div>
+          </button>
+        </div>
+      </header>
+
+      <!-- Vistas Modulares de la Aplicación (Contenido Dinámico) -->
+      <section class="app-content">
+        <!-- 1. Pantalla Inicio -->
+        <div id="view-inicio" class="view-section active"></div>
+
+        <!-- 2. Pantalla Clientes -->
+        <div id="view-clientes" class="view-section"></div>
+
+        <!-- 3. Pantalla Equipos -->
+        <div id="view-equipos" class="view-section"></div>
+
+        <!-- 4. Pantalla Servicios -->
+        <div id="view-servicios" class="view-section"></div>
+
+        <!-- 5. Pantalla Facturación -->
+        <div id="view-facturacion" class="view-section"></div>
+
+        <!-- 6. Pantalla Finanzas -->
+        <div id="view-finanzas" class="view-section"></div>
+
+        <!-- 7. Pantalla Recordatorios -->
+        <div id="view-recordatorios" class="view-section"></div>
+
+        <!-- 8. Pantalla Configuración -->
+        <div id="view-configuracion" class="view-section"></div>
+      </section>
+    </main>
+
+    <!-- ====================================================================
+         BOTTOM NAVIGATION BAR (MÓVILES)
+         ==================================================================== -->
+    <nav class="bottom-nav">
+      <button class="bottom-nav-item active" data-screen="inicio" onclick="App.navigate('inicio')">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>
+        <span>Inicio</span>
+      </button>
+
+      <button class="bottom-nav-item" data-screen="clientes" onclick="App.navigate('clientes')">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
+        <span>Clientes</span>
+      </button>
+
+      <button class="bottom-nav-item" data-screen="servicios" onclick="App.navigate('servicios')">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg></span>
+        <span>Servicios</span>
+      </button>
+
+      <button class="bottom-nav-item" data-screen="facturacion" onclick="App.navigate('facturacion')">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></span>
+        <span>Facturas</span>
+      </button>
+
+      <button class="bottom-nav-item" data-screen="finanzas" onclick="App.navigate('finanzas')">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></span>
+        <span>Finanzas</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ====================================================================
+       MODALES GLOBALES DE REGISTRO
+       ==================================================================== -->
+
+  <!-- Modal 1: Nueva Orden de Servicio (Fiel a la vista móvil 3) -->
+  <div id="modalNuevaOrden" class="modal-backdrop">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">Nueva orden de servicio</h3>
+        <button class="modal-close-btn" onclick="App.closeModal('modalNuevaOrden')">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+        </button>
+      </div>
+      <form onsubmit="App.submitNuevaOrden(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Cliente:</label>
+            <select id="ordenClienteSelect" class="form-select" required></select>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label class="form-label" style="margin-bottom: 0;">Equipo a atender:</label>
+              <button type="button" class="btn btn-sm btn-soft" style="padding: 2px 10px; font-size: 11px;" onclick="App.toggleCustomEquipoOrden()">
+                ➕ + Especificar otro equipo
+              </button>
+            </div>
+            <select id="ordenEquipoSelect" class="form-select" onchange="App.onOrdenEquipoChange(this.value)" required></select>
+          </div>
+
+          <!-- Panel interactivo de especificación detallada de equipo (Capacidades y tipos) -->
+          <div id="ordenCustomEquipoPanel" style="display: none; background: #F8FAFC; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+            <div style="font-size: 12px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <span>🔧 Especificaciones del Equipo para esta Orden:</span>
+            </div>
+
+            <!-- Selector de Tipo de Electrodoméstico -->
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Tipo de equipo:</label>
+              <div class="quick-pills-row" id="pillsTipoEquipoOrden">
+                <button type="button" class="quick-pill-btn active" data-val="Aire Acondicionado" onclick="App.setOrdenTipoEquipo('Aire Acondicionado')">❄️ Aire Acondicionado</button>
+                <button type="button" class="quick-pill-btn" data-val="Nevera" onclick="App.setOrdenTipoEquipo('Nevera')">🧊 Nevera</button>
+                <button type="button" class="quick-pill-btn" data-val="Lavadora" onclick="App.setOrdenTipoEquipo('Lavadora')">🧺 Lavadora</button>
+              </div>
+            </div>
+
+            <!-- Subpanel: AIRE ACONDICIONADO -->
+            <div id="subpanelAireOrden" style="display: block;">
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Capacidad del Aire (BTU):</label>
+                <div class="quick-pills-row" id="pillsCapacidadAireOrden">
+                  <button type="button" class="quick-pill-btn active" data-val="12,000 BTU" onclick="App.setCapacidadAireOrden('12,000 BTU')">12,000 BTU</button>
+                  <button type="button" class="quick-pill-btn" data-val="18,000 BTU" onclick="App.setCapacidadAireOrden('18,000 BTU')">18,000 BTU</button>
+                  <button type="button" class="quick-pill-btn" data-val="24,000 BTU" onclick="App.setCapacidadAireOrden('24,000 BTU')">24,000 BTU</button>
+                  <button type="button" class="quick-pill-btn" data-val="36,000 BTU" onclick="App.setCapacidadAireOrden('36,000 BTU')">36,000 BTU</button>
+                  <button type="button" class="quick-pill-btn" data-val="otro" onclick="App.setCapacidadAireOrden('otro')">Otro...</button>
+                </div>
+                <input type="text" id="customAireBtuInputOrden" class="form-input custom-input-reveal" style="display: none;" placeholder="Escriba los BTU (ej: 9,000 BTU, 60,000 BTU)">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Tecnología / Subtipo:</label>
+                <div class="quick-pills-row" id="pillsSubtipoAireOrden">
+                  <button type="button" class="quick-pill-btn active" data-val="Inverter" onclick="App.setSubtipoAireOrden('Inverter')">Inverter</button>
+                  <button type="button" class="quick-pill-btn" data-val="Convencional" onclick="App.setSubtipoAireOrden('Convencional')">Convencional</button>
+                  <button type="button" class="quick-pill-btn" data-val="Piso-Techo" onclick="App.setSubtipoAireOrden('Piso-Techo')">Piso-Techo</button>
+                  <button type="button" class="quick-pill-btn" data-val="Cassette" onclick="App.setSubtipoAireOrden('Cassette')">Cassette</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subpanel: NEVERA -->
+            <div id="subpanelNeveraOrden" style="display: none;">
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Tipo de Nevera / Refrigerador:</label>
+                <div class="quick-pills-row" id="pillsTipoNeveraOrden">
+                  <button type="button" class="quick-pill-btn active" data-val="No Frost" onclick="App.setTipoNeveraOrden('No Frost')">No Frost</button>
+                  <button type="button" class="quick-pill-btn" data-val="Inverter" onclick="App.setTipoNeveraOrden('Inverter')">Inverter</button>
+                  <button type="button" class="quick-pill-btn" data-val="Display Comercial" onclick="App.setTipoNeveraOrden('Display Comercial')">Display Comercial</button>
+                  <button type="button" class="quick-pill-btn" data-val="French Door" onclick="App.setTipoNeveraOrden('French Door')">French Door</button>
+                  <button type="button" class="quick-pill-btn" data-val="Dos Puertas" onclick="App.setTipoNeveraOrden('Dos Puertas')">Dos Puertas</button>
+                  <button type="button" class="quick-pill-btn" data-val="otro" onclick="App.setTipoNeveraOrden('otro')">Otra...</button>
+                </div>
+                <input type="text" id="customNeveraTipoInputOrden" class="form-input custom-input-reveal" style="display: none;" placeholder="Escriba el tipo de nevera">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Capacidad en Pies Cúbicos:</label>
+                <div class="quick-pills-row" id="pillsCapacidadNeveraOrden">
+                  <button type="button" class="quick-pill-btn" data-val="14 Pies Cúbicos" onclick="App.setCapacidadNeveraOrden('14 Pies Cúbicos')">14 Pies</button>
+                  <button type="button" class="quick-pill-btn active" data-val="18 Pies Cúbicos" onclick="App.setCapacidadNeveraOrden('18 Pies Cúbicos')">18 Pies</button>
+                  <button type="button" class="quick-pill-btn" data-val="22 Pies Cúbicos" onclick="App.setCapacidadNeveraOrden('22 Pies Cúbicos')">22 Pies</button>
+                  <button type="button" class="quick-pill-btn" data-val="26 Pies Cúbicos" onclick="App.setCapacidadNeveraOrden('26 Pies Cúbicos')">26 Pies</button>
+                  <button type="button" class="quick-pill-btn" data-val="otro" onclick="App.setCapacidadNeveraOrden('otro')">Otro...</button>
+                </div>
+                <input type="text" id="customNeveraCapInputOrden" class="form-input custom-input-reveal" style="display: none;" placeholder="Ej: 20 Pies Cúbicos">
+              </div>
+            </div>
+
+            <!-- Subpanel: LAVADORA -->
+            <div id="subpanelLavadoraOrden" style="display: none;">
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Tipo de Lavadora:</label>
+                <div class="quick-pills-row" id="pillsTipoLavadoraOrden">
+                  <button type="button" class="quick-pill-btn active" data-val="Carga Superior" onclick="App.setTipoLavadoraOrden('Carga Superior')">Carga Superior</button>
+                  <button type="button" class="quick-pill-btn" data-val="Carga Frontal" onclick="App.setTipoLavadoraOrden('Carga Frontal')">Carga Frontal</button>
+                  <button type="button" class="quick-pill-btn" data-val="Automática Smart" onclick="App.setTipoLavadoraOrden('Automática Smart')">Automática Smart</button>
+                  <button type="button" class="quick-pill-btn" data-val="Semiautomática (2 tinas)" onclick="App.setTipoLavadoraOrden('Semiautomática (2 tinas)')">Semiautomática (2 tinas)</button>
+                  <button type="button" class="quick-pill-btn" data-val="Centro de Lavado" onclick="App.setTipoLavadoraOrden('Centro de Lavado')">Centro de Lavado</button>
+                  <button type="button" class="quick-pill-btn" data-val="otro" onclick="App.setTipoLavadoraOrden('otro')">Otra...</button>
+                </div>
+                <input type="text" id="customLavadoraTipoInputOrden" class="form-input custom-input-reveal" style="display: none;" placeholder="Escriba el tipo de lavadora">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 10px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Capacidad de Carga:</label>
+                <div class="quick-pills-row" id="pillsCapacidadLavadoraOrden">
+                  <button type="button" class="quick-pill-btn" data-val="14 Kg (30 lbs)" onclick="App.setCapacidadLavadoraOrden('14 Kg (30 lbs)')">14 Kg (30 lbs)</button>
+                  <button type="button" class="quick-pill-btn active" data-val="18 Kg (40 lbs)" onclick="App.setCapacidadLavadoraOrden('18 Kg (40 lbs)')">18 Kg (40 lbs)</button>
+                  <button type="button" class="quick-pill-btn" data-val="21 Kg (46 lbs)" onclick="App.setCapacidadLavadoraOrden('21 Kg (46 lbs)')">21 Kg (46 lbs)</button>
+                  <button type="button" class="quick-pill-btn" data-val="25 Kg (55 lbs)" onclick="App.setCapacidadLavadoraOrden('25 Kg (55 lbs)')">25 Kg (55 lbs)</button>
+                  <button type="button" class="quick-pill-btn" data-val="otro" onclick="App.setCapacidadLavadoraOrden('otro')">Otra...</button>
+                </div>
+                <input type="text" id="customLavadoraCapInputOrden" class="form-input custom-input-reveal" style="display: none;" placeholder="Ej: 16 Kg (35 lbs)">
+              </div>
+            </div>
+
+            <!-- Ubicación y Marca rápida -->
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Ubicación física:</label>
+                <input type="text" id="customEquipoUbicacionOrden" class="form-input" placeholder="Ej: Sala, Cocina, Área Lavado" value="Sala principal">
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--color-primary);">Marca del equipo:</label>
+                <input type="text" id="customEquipoMarcaOrden" class="form-input" placeholder="Carrier, Samsung, LG, Whirlpool..." value="Carrier">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tipo de servicio:</label>
+            <div class="service-type-selector">
+              <button type="button" class="service-type-option active" data-type="Mantenimiento" onclick="App.selectServiceType('Mantenimiento')">
+                Mantenimiento
+              </button>
+              <button type="button" class="service-type-option" data-type="Reparación" onclick="App.selectServiceType('Reparación')">
+                Reparación
+              </button>
+              <button type="button" class="service-type-option" data-type="Instalación" onclick="App.selectServiceType('Instalación')">
+                Instalación
+              </button>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Fecha:</label>
+              <input type="date" id="ordenFecha" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Hora:</label>
+              <input type="time" id="ordenHora" class="form-input" value="09:00" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Técnico asignado:</label>
+            <select id="ordenTecnico" class="form-select">
+              <option value="Marcos Pujols">Marcos Pujols (Técnico Senior)</option>
+              <option value="David Pujols">David Pujols (Refrigeración y A/C)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Descripción del trabajo:</label>
+            <textarea id="ordenDescripcion" class="form-textarea" rows="3" placeholder="Revisión general, limpieza de filtros y comprobación de presión.">Revisión general, limpieza de filtros y comprobación de presión.</textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="App.closeModal('modalNuevaOrden')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar y continuar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Nuevo Cliente -->
+  <div id="modalNuevoCliente" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar Nuevo Cliente</h3>
+        <button class="modal-close-btn" onclick="App.closeModal('modalNuevoCliente')">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+        </button>
+      </div>
+      <form id="formNuevoCliente" onsubmit="App.submitNuevoCliente(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Nombre Completo o Empresa:</label>
+            <input type="text" id="clienteNombre" class="form-input" placeholder="Ej: Ing. Pedro Ramírez" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tipo de Cliente:</label>
+              <select id="clienteTipo" class="form-select">
+                <option value="Residencial">Residencial</option>
+                <option value="Comercial">Comercial</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Teléfono:</label>
+              <input type="tel" id="clienteTelefono" class="form-input" placeholder="809-555-0199" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">WhatsApp:</label>
+              <input type="tel" id="clienteWhatsapp" class="form-input" placeholder="809-555-0199">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Correo Electrónico:</label>
+              <input type="email" id="clienteCorreo" class="form-input" placeholder="cliente@email.com">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Dirección (Sector, Ciudad):</label>
+            <input type="text" id="clienteDireccion" class="form-input" placeholder="Ej: Bella Vista, Santo Domingo, RD" required>
+          </div>
+
+          <!-- Geolocalización GPS del Cliente -->
+          <div class="form-group" style="background: #F8FAFC; border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-size: 12px; font-weight: 700; color: var(--color-primary);">Geolocalización GPS:</span>
+              <button type="button" class="btn btn-sm btn-soft" id="btnCapturarGpsCliente" onclick="App.capturarGpsCliente()">
+                📍 Obtener GPS Actual
+              </button>
+            </div>
+            <div id="gpsStatusCliente" style="font-size: 11.5px; color: var(--text-muted);">
+              Presione para detectar y guardar las coordenadas satelitales del cliente.
+            </div>
+            <input type="hidden" id="clienteLat" value="">
+            <input type="hidden" id="clienteLng" value="">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="App.closeModal('modalNuevoCliente')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Registrar Cliente</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Nuevo Equipo -->
+  <div id="modalNuevoEquipo" class="modal-backdrop">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar y Asociar Equipo</h3>
+        <button class="modal-close-btn" onclick="App.closeModal('modalNuevoEquipo')">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+        </button>
+      </div>
+      <form onsubmit="App.submitNuevoEquipo(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Cliente Asociado:</label>
+            <select id="equipoClienteSelect" class="form-select" required></select>
+          </div>
+
+          <!-- Selección Rápida de Tipo de Electrodoméstico -->
+          <div class="form-group">
+            <label class="form-label">Tipo de Equipo:</label>
+            <div class="quick-pills-row" id="pillsModalNuevoEquipoTipo">
+              <button type="button" class="quick-pill-btn active" data-val="Aire Acondicionado" onclick="App.setNuevoEquipoTipo('Aire Acondicionado')">❄️ Aire Acondicionado</button>
+              <button type="button" class="quick-pill-btn" data-val="Nevera" onclick="App.setNuevoEquipoTipo('Nevera')">🧊 Nevera</button>
+              <button type="button" class="quick-pill-btn" data-val="Lavadora" onclick="App.setNuevoEquipoTipo('Lavadora')">🧺 Lavadora</button>
+            </div>
+            <input type="hidden" id="equipoTipo" value="Aire Acondicionado">
+          </div>
+
+          <!-- Subsección para Aire Acondicionado -->
+          <div id="subseccionNuevoAire" style="display: block;">
+            <div class="form-group">
+              <label class="form-label">Capacidad del Aire (BTU):</label>
+              <div class="quick-pills-row">
+                <button type="button" class="quick-pill-btn active" onclick="App.setNuevoEquipoCapacidad('12,000 BTU', this)">12,000 BTU</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('18,000 BTU', this)">18,000 BTU</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('24,000 BTU', this)">24,000 BTU</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('36,000 BTU', this)">36,000 BTU</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('otro', this)">Otro...</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tecnología / Subtipo:</label>
+              <div class="quick-pills-row">
+                <button type="button" class="quick-pill-btn active" onclick="App.setNuevoEquipoSubtipo('Inverter', this)">Inverter</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Convencional', this)">Convencional</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Piso-Techo', this)">Piso-Techo</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Cassette', this)">Cassette</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subsección para Nevera -->
+          <div id="subseccionNuevaNevera" style="display: none;">
+            <div class="form-group">
+              <label class="form-label">Tipo de Nevera / Refrigerador:</label>
+              <div class="quick-pills-row">
+                <button type="button" class="quick-pill-btn active" onclick="App.setNuevoEquipoSubtipo('No Frost', this)">No Frost</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Inverter', this)">Inverter</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Display Comercial', this)">Display Comercial</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('French Door', this)">French Door</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Dos Puertas', this)">Dos Puertas</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Capacidad en Pies Cúbicos:</label>
+              <div class="quick-pills-row">
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('14 Pies Cúbicos', this)">14 Pies</button>
+                <button type="button" class="quick-pill-btn active" onclick="App.setNuevoEquipoCapacidad('18 Pies Cúbicos', this)">18 Pies</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('22 Pies Cúbicos', this)">22 Pies</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('26 Pies Cúbicos', this)">26 Pies</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('otro', this)">Otro...</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subsección para Lavadora -->
+          <div id="subseccionNuevaLavadora" style="display: none;">
+            <div class="form-group">
+              <label class="form-label">Tipo de Lavadora:</label>
+              <div class="quick-pills-row">
+                <button type="button" class="quick-pill-btn active" onclick="App.setNuevoEquipoSubtipo('Carga Superior', this)">Carga Superior</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Carga Frontal', this)">Carga Frontal</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Automática Smart', this)">Automática Smart</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Semiautomática', this)">Semiautomática (2 tinas)</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoSubtipo('Centro de Lavado', this)">Centro de Lavado</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Capacidad de Carga:</label>
+              <div class="quick-pills-row">
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('14 Kg (30 lbs)', this)">14 Kg (30 lbs)</button>
+                <button type="button" class="quick-pill-btn active" onclick="App.setNuevoEquipoCapacidad('18 Kg (40 lbs)', this)">18 Kg (40 lbs)</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('21 Kg (46 lbs)', this)">21 Kg (46 lbs)</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('25 Kg (55 lbs)', this)">25 Kg (55 lbs)</button>
+                <button type="button" class="quick-pill-btn" onclick="App.setNuevoEquipoCapacidad('otro', this)">Otra...</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campo de Capacidad y Subtipo (Sincronizado) -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Capacidad seleccionada / personalizada:</label>
+              <input type="text" id="equipoCapacidad" class="form-input" value="12,000 BTU" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subtipo / Tecnología:</label>
+              <input type="text" id="equipoSubtipo" class="form-input" value="Inverter">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Marca:</label>
+              <input type="text" id="equipoMarca" class="form-input" placeholder="Carrier, Samsung, LG, Whirlpool..." value="Carrier" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Modelo:</label>
+              <input type="text" id="equipoModelo" class="form-input" placeholder="Modelo o Serie" value="Serie 2025">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Ubicación física:</label>
+              <input type="text" id="equipoUbicacion" class="form-input" placeholder="Ej: Sala, Cocina, Habitación #2" value="Sala principal" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fecha de Instalación:</label>
+              <input type="date" id="equipoFechaInstalacion" class="form-input" value="2024-03-15">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="App.closeModal('modalNuevoEquipo')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Registrar Equipo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: Generar Factura -->
+  <div id="modalGenerarFactura" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Generar Factura</h3>
+        <button class="modal-close-btn" onclick="App.closeModal('modalGenerarFactura')">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+        </button>
+      </div>
+      <form onsubmit="App.submitGenerarFactura(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Cliente:</label>
+            <select id="facturaClienteSelect" class="form-select" required></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Concepto / Servicio Prestado:</label>
+            <input type="text" id="facturaConcepto" class="form-input" placeholder="Mantenimiento preventivo A/C 12,000 BTU" required>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Monto Total (RD$):</label>
+              <input type="number" id="facturaMonto" class="form-input" placeholder="4500" min="0" step="any" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Estado de Pago:</label>
+              <select id="facturaEstado" class="form-select">
+                <option value="Pagada">Pagada</option>
+                <option value="Pendiente">Pendiente</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="App.closeModal('modalGenerarFactura')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Generar y Previsualizar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 5: Nueva Transacción (Finanzas) -->
+  <div id="modalNuevaTransaccion" class="modal-backdrop">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar Movimiento Financiero</h3>
+        <button class="modal-close-btn" onclick="App.closeModal('modalNuevaTransaccion')">
+          <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+        </button>
+      </div>
+      <form id="formNuevaTransaccion" onsubmit="App.submitNuevaTransaccion(event)">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tipo de Movimiento:</label>
+              <select id="txTipo" class="form-select">
+                <option value="Ingreso">Ingreso (+)</option>
+                <option value="Egreso">Egreso (-)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monto (RD$):</label>
+              <input type="number" id="txMonto" class="form-input" placeholder="5000" min="1" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Concepto:</label>
+            <input type="text" id="txConcepto" class="form-input" placeholder="Ej: Compra de Gas R410A / Cobro de servicio" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Categoría:</label>
+            <select id="txCategoria" class="form-select">
+              <option value="Servicios A/C">Servicios A/C</option>
+              <option value="Refrigeración">Refrigeración</option>
+              <option value="Materiales y Repuestos">Materiales y Repuestos</option>
+              <option value="Combustible y Transporte">Combustible y Transporte</option>
+              <option value="Herramientas">Herramientas</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" onclick="App.closeModal('modalNuevaTransaccion')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Registrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pantalla / Overlay de Login Demostrativa (Móvil y Escritorio) -->
+  <div id="loginOverlay" class="login-overlay" style="display: none;"></div>
+
+  <!-- Scripts de la Aplicación -->
+  <script src="js/store.js"></script>
+  <script src="js/modules/auth.js"></script>
+  <script src="js/modules/dashboard.js"></script>
+  <script src="js/modules/clientes.js"></script>
+  <script src="js/modules/equipos.js"></script>
+  <script src="js/modules/servicios.js"></script>
+  <script src="js/modules/facturacion.js"></script>
+  <script src="js/modules/finanzas.js"></script>
+  <script src="js/modules/recordatorios.js"></script>
+  <script src="js/modules/configuracion.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
