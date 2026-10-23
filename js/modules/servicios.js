@@ -229,7 +229,10 @@ const ServiciosModule = {
     if (!srv) return;
     const cliente = window.store.getClienteById(srv.clienteId);
     const phone = cliente ? (cliente.whatsapp || cliente.telefono).replace(/\D/g, '') : '8095550100';
-    const msg = `Hola ${srv.clienteNombre}, le saludamos de PUJOLS Servicios.\n\nLe confirmamos su cita de servicio técnico:\n📅 Fecha: ${srv.fechaFormato}\n⏰ Hora: ${srv.hora}\n🔧 Trabajo: ${srv.titulo} (${srv.equipoNombre})\n👨‍🔧 Técnico: ${srv.tecnico}\n\nPor favor confírmenos si este horario le resulta conveniente. ¡Gracias por confiar en PUJOLS Servicios!`;
+    const tratamiento = srv.clienteNombre.includes('&') || srv.clienteNombre.toLowerCase().includes('s.r.l') || srv.clienteNombre.toLowerCase().includes('constructora')
+      ? 'Estimados señores de'
+      : 'Estimado/a Sr./Sra.';
+    const msg = `${tratamiento} ${srv.clienteNombre}, reciba un cordial saludo de PUJOLS Servicios.\n\nLe confirmamos su cita de servicio técnico programada:\n📅 Fecha: ${srv.fechaFormato}\n⏰ Hora: ${srv.hora}\n🔧 Trabajo: ${srv.titulo} (${srv.equipoNombre})\n👨‍🔧 Técnico: ${srv.tecnico}\n\nPor favor indíquenos si este horario le resulta conveniente. ¡Gracias por confiar en PUJOLS Servicios!`;
     window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 };

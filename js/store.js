@@ -629,7 +629,7 @@ const INITIAL_STATE = {
           titulo: "Mensaje 1 - Recordatorio inicial",
           estado: "proximo",
           activo: true,
-          mensajeTexto: "Hola Juan Pérez, le saludamos de PUJOLS Servicios. Le recordamos que su aire acondicionado Carrier 12,000 BTU ha cumplido 7 meses de funcionamiento. Para garantizar un aire limpio, eficiencia eléctrica y alargar la vida del compresor, le sugerimos coordinar su mantenimiento preventivo. ¿Desea que agendemos su cita esta semana?"
+          mensajeTexto: "Estimado/a Sr./Sra. Juan Pérez, le saludamos de PUJOLS Servicios. Le recordamos con agrado que su aire acondicionado Carrier 12,000 BTU ha cumplido 7 meses de funcionamiento. Para garantizar un aire limpio, eficiencia eléctrica y alargar la vida útil del equipo, le sugerimos coordinar su mantenimiento preventivo. ¿Desea que agendemos su visita esta semana?"
         },
         {
           tiempo: "8 meses",
@@ -637,7 +637,7 @@ const INITIAL_STATE = {
           titulo: "Mensaje 2 - Seguimiento",
           estado: "pendiente",
           activo: false,
-          mensajeTexto: "Hola Juan Pérez, de PUJOLS Servicios. Dando seguimiento a su aire acondicionado (12,000 BTU), tenemos disponibilidad para mantenimiento preventivo en su zona. ¿Le gustaría confirmar una fecha conveniente?"
+          mensajeTexto: "Estimado/a Sr./Sra. Juan Pérez, un cordial saludo de PUJOLS Servicios. Dando seguimiento al cuidado de su aire acondicionado (12,000 BTU), disponemos de técnicos en su zona para realizar su mantenimiento preventivo. ¿Le gustaría coordinar una fecha conveniente?"
         },
         {
           tiempo: "+50 días",
@@ -645,7 +645,7 @@ const INITIAL_STATE = {
           titulo: "Mensaje 3 - Último recordatorio",
           estado: "futuro",
           activo: false,
-          mensajeTexto: "Estimado Juan Pérez, en PUJOLS Servicios cuidamos sus equipos. Su equipo ya sobrepasó el ciclo recomendado de limpieza. Evite malos olores o sobrecostos de energía agendando hoy su servicio técnico."
+          mensajeTexto: "Estimado/a Sr./Sra. Juan Pérez, reciba un atento saludo de PUJOLS Servicios. Su equipo ya sobrepasó el ciclo recomendado de limpieza técnica. Evite sobrecostos de energía o acumulación de polvo agendando hoy su servicio preventivo."
         }
       ]
     },
@@ -657,7 +657,7 @@ const INITIAL_STATE = {
         fechaVencimiento: "14 oct 2025",
         estado: "Hoy",
         telefono: "8095554321",
-        mensaje: "Hola Carlos Rodríguez, le saludamos de PUJOLS Servicios. Hoy corresponde el chequeo preventivo de su A/C Midea."
+        mensaje: "Estimado/a Sr./Sra. Carlos Rodríguez, reciba un cordial saludo de PUJOLS Servicios. Le informamos que hoy corresponde el chequeo preventivo de su A/C Midea."
       },
       {
         id: "REC-3",
@@ -666,7 +666,7 @@ const INITIAL_STATE = {
         fechaVencimiento: "12 oct 2025",
         estado: "Vencido (2 días)",
         telefono: "8095555678",
-        mensaje: "Hola García & Co., de PUJOLS Servicios. Recordatorio de mantenimiento programado para su conservador comercial."
+        mensaje: "Estimados señores de García & Co., reciban un saludo de PUJOLS Servicios. Le recordamos su mantenimiento programado para su conservador comercial."
       },
       {
         id: "REC-4",
@@ -675,7 +675,7 @@ const INITIAL_STATE = {
         fechaVencimiento: "25 oct 2025",
         estado: "Próximo (11 días)",
         telefono: "8095556789",
-        mensaje: "Estimados Constructora ABC, en PUJOLS Servicios les recordamos la fecha de revisión preventiva para las unidades Carrier 36K."
+        mensaje: "Estimados señores de Constructora ABC, en PUJOLS Servicios les enviamos un cordial saludo y les recordamos la fecha de revisión preventiva para las unidades Carrier 36K."
       }
     ]
   }

@@ -278,7 +278,10 @@ const FacturacionModule = {
     const factura = window.store.getFacturas().find(f => f.numero === numero);
     if (!factura) return;
     const phone = (factura.clienteTelefono || '8095550100').replace(/\D/g, '');
-    const msg = `Hola ${factura.clienteNombre}, le compartimos el detalle de su factura ${factura.numero} de PUJOLS Servicios por un total de RD$ ${factura.total.toLocaleString('en-US')}. ¡Gracias por preferirnos!`;
+    const tratamiento = factura.clienteNombre.includes('&') || factura.clienteNombre.toLowerCase().includes('s.r.l') || factura.clienteNombre.toLowerCase().includes('constructora')
+      ? 'Estimados señores de'
+      : 'Estimado/a Sr./Sra.';
+    const msg = `${tratamiento} ${factura.clienteNombre}, reciba un cordial saludo de PUJOLS Servicios.\n\nLe compartimos el detalle de su comprobante/factura ${factura.numero} por un total de RD$ ${factura.total.toLocaleString('en-US')}.\n\n¡Gracias por confiar en nuestros servicios de aire y refrigeración!`;
     window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   }
 };
