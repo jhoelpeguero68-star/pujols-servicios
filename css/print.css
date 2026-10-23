@@ -49,6 +49,15 @@
     print-color-adjust: exact;
   }
 
+  .invoice-logo-img {
+    height: 95px !important;
+    max-width: 250px !important;
+    width: auto !important;
+    object-fit: contain !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   .badge {
     border: 1px solid #000000 !important;
     -webkit-print-color-adjust: exact;

@@ -1092,12 +1092,15 @@ input:checked + .slider:before {
 .invoice-logo-box {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .invoice-logo-img {
-  height: 48px;
+  height: 90px;
+  max-width: 240px;
+  width: auto;
   object-fit: contain;
+  display: block;
 }
 
 .invoice-meta-right {
