@@ -805,6 +805,8 @@ class Store {
 
     if (!navigator.onLine) {
       this.addToSyncQueue('cliente', newCliente);
+    } else if (window.GoogleSync && window.GoogleSync.sincronizarNuevoCliente) {
+      window.GoogleSync.sincronizarNuevoCliente(newCliente);
     }
 
     this.saveState();
@@ -958,6 +960,11 @@ class Store {
     }
 
     this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevaFactura) {
+      window.GoogleSync.sincronizarNuevaFactura(newFactura);
+    }
+
     return newFactura;
   }
 

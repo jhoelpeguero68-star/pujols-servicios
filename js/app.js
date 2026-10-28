@@ -33,6 +33,11 @@ const App = {
 
     // 6. Monitoreo de conexión a Internet y sincronización offline
     this.setupOfflineSyncListeners();
+
+    // 7. Inicializar Google Identity & Sheets Sync
+    if (window.GoogleSync) {
+      window.GoogleSync.init();
+    }
   },
 
   setupOfflineSyncListeners() {
