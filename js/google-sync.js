@@ -103,15 +103,6 @@ const GoogleSync = {
     document.getElementById('modalConfigGoogleAuth').remove();
     this.conectarConGoogle();
   },
-      });
-
-      this.tokenClient.requestAccessToken({ prompt: 'consent' });
-    } catch (err) {
-      console.error('Error al inicializar Google Token Client:', err);
-      // Fallback amigable: permitir ingresar correo y Sheet URL manualmente si no hay Client ID registrado
-      this.abrirModalConfigManual();
-    }
-  },
 
   // Obtener correo del usuario autenticado
   async obtenerPerfilGoogle() {
