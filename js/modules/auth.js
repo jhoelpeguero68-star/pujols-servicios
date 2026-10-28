@@ -29,8 +29,8 @@ const AuthModule = {
                 type="text"
                 id="loginUser"
                 class="login-input"
-                placeholder="Correo o usuario"
-                value="admin@pujolsservicios.com"
+                placeholder="Correo electrónico o usuario"
+                value=""
                 required
               >
             </div>
@@ -44,7 +44,7 @@ const AuthModule = {
                 id="loginPass"
                 class="login-input"
                 placeholder="Contraseña"
-                value="demo1234"
+                value=""
                 required
               >
             </div>
@@ -54,17 +54,17 @@ const AuthModule = {
             </button>
           </form>
 
-          <a href="#" class="login-forgot-link" onclick="alert('En el modo de demostración, puede acceder con las credenciales prellenadas.'); return false;">
+          <a href="#" class="login-forgot-link" onclick="alert('Contacte al soporte técnico para restablecer su clave.'); return false;">
             ¿Olvidaste tu contraseña?
           </a>
 
           <div class="login-register-text">
-            ¿No tienes cuenta? <a href="#" onclick="alert('Solicitud de acceso enviada al Administrador de PUJOLS Servicios.'); return false;">Solicitar acceso</a>
+            ¿No tienes cuenta? <a href="#" onclick="alert('Solicitud enviada al Administrador de PUJOLS Servicios.'); return false;">Solicitar acceso</a>
           </div>
 
           <div style="margin-top: 24px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.15); padding-top: 14px; width: 100%;">
             <button class="btn btn-sm btn-outline" style="color: #FFFFFF; border-color: rgba(255,255,255,0.4); font-size: 11px;" onclick="AuthModule.loginDirecto()">
-              ⚡ Entrar Directamente (Modo Demostración)
+              ⚡ Entrar al Sistema
             </button>
           </div>
         </div>

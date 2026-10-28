@@ -18,36 +18,100 @@ const GoogleSync = {
     this.actualizarIndicadorUI();
   },
 
-  // Iniciar flujo de inicio de sesión con Google Identity
+  // Iniciar flujo de sincronización con Google Identity / Google Sheets
   conectarConGoogle() {
+    // Si ya tiene un Client ID registrado en localStorage o se desea configurar uno
+    const currentClientId = localStorage.getItem('pujols_google_client_id');
+
+    if (!currentClientId) {
+      // Mostrar modal para configurar Client ID o vincular hoja directamente
+      this.abrirModalConfigGoogle();
+      return;
+    }
+
     if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-      alert('Cargando servicios de Google... Por favor intente en un momento.');
+      alert('Cargando servicios de Google... Por favor intente en unos segundos.');
       return;
     }
 
     try {
       this.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: this.CLIENT_ID,
+        client_id: currentClientId,
         scope: this.SCOPES,
         callback: async (resp) => {
           if (resp.error !== undefined) {
             console.error('Error Google Auth:', resp);
-            alert('No se pudo autenticar con Google: ' + (resp.error_description || resp.error));
+            alert('Error de Google: ' + (resp.error_description || resp.error) + '\n\nRevise que el origen https://jhoelpeguero68-star.github.io esté autorizado en Google Cloud Console.');
             return;
           }
 
           this.accessToken = resp.access_token;
           localStorage.setItem('pujols_google_token', this.accessToken);
 
-          // Obtener perfil de usuario
           await this.obtenerPerfilGoogle();
-          
-          // Crear o vincular hoja de cálculo en Drive
           await this.inicializarHojaCalculo();
 
           this.actualizarIndicadorUI();
           alert(`✅ Conectado exitosamente con Google (${this.userEmail || 'Google Drive'}). La sincronización entre celular y PC está activa.`);
         }
+      });
+
+      this.tokenClient.requestAccessToken({ prompt: 'consent' });
+    } catch (err) {
+      console.error('Error al inicializar Google Token Client:', err);
+      this.abrirModalConfigGoogle();
+    }
+  },
+
+  // Modal para configurar Client ID o conectar Google Sheets
+  abrirModalConfigGoogle() {
+    const existing = document.getElementById('modalConfigGoogleAuth');
+    if (existing) existing.remove();
+
+    const savedClientId = localStorage.getItem('pujols_google_client_id') || '';
+    const modal = document.createElement('div');
+    modal.id = 'modalConfigGoogleAuth';
+    modal.className = 'modal-backdrop open';
+    modal.style.zIndex = '1000';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 class="modal-title">🔐 Conexión con Google Sheets</h3>
+          <button class="modal-close-btn" onclick="document.getElementById('modalConfigGoogleAuth').remove()">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: #1E40AF;">
+            Para que Google autorice a la app a sincronizar con tu Google Drive sin bloqueos, debes ingresar tu <strong>Client ID de Google Cloud Console</strong> con el dominio autorizado:
+            <br><code style="background: #FFFFFF; padding: 2px 6px; border-radius: 4px; font-size: 11px; display: inline-block; margin-top: 4px;">https://jhoelpeguero68-star.github.io</code>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Client ID de Google OAuth 2.0:</label>
+            <input type="text" id="inputGoogleClientId" class="form-input" placeholder="Ej: 123456789-xxxx.apps.googleusercontent.com" value="${savedClientId}">
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Se genera gratis en Google Cloud Console ➡️ Credenciales ➡️ ID de cliente de OAuth.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" onclick="document.getElementById('modalConfigGoogleAuth').remove()">Cancelar</button>
+          <button class="btn btn-primary" onclick="GoogleSync.guardarClientId()">💾 Guardar y Conectar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  },
+
+  guardarClientId() {
+    const cid = (document.getElementById('inputGoogleClientId').value || '').trim();
+    if (!cid) {
+      alert('Por favor ingrese su Client ID de Google Cloud.');
+      return;
+    }
+    localStorage.setItem('pujols_google_client_id', cid);
+    document.getElementById('modalConfigGoogleAuth').remove();
+    this.conectarConGoogle();
+  },
       });
 
       this.tokenClient.requestAccessToken({ prompt: 'consent' });
