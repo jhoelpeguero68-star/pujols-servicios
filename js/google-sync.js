@@ -2,8 +2,8 @@
 // Permite sincronización automática de Clientes, Equipos, Servicios y Facturas entre PC y Celular
 
 const GoogleSync = {
-  // Client ID de Google OAuth 2.0 (Google Identity Services)
-  CLIENT_ID: localStorage.getItem('pujols_google_client_id') || '458129034871-pujolsservicios.apps.googleusercontent.com',
+  // Client ID Oficial Permanente de Google OAuth 2.0
+  CLIENT_ID: '388437967982-knd0vagm1c4h0c5igunsdb4g75iu2a18.apps.googleusercontent.com',
   SCOPES: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
   SHEET_NAME: 'PUJOLS Servicios - Base de Datos',
   
@@ -20,28 +20,19 @@ const GoogleSync = {
 
   // Iniciar flujo de sincronización con Google Identity / Google Sheets
   conectarConGoogle() {
-    // Si ya tiene un Client ID registrado en localStorage o se desea configurar uno
-    const currentClientId = localStorage.getItem('pujols_google_client_id');
-
-    if (!currentClientId) {
-      // Mostrar modal para configurar Client ID o vincular hoja directamente
-      this.abrirModalConfigGoogle();
-      return;
-    }
-
     if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-      alert('Cargando servicios de Google... Por favor intente en unos segundos.');
+      alert('Cargando servicios oficiales de Google... Por favor intente en un momento.');
       return;
     }
 
     try {
       this.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: currentClientId,
+        client_id: this.CLIENT_ID,
         scope: this.SCOPES,
         callback: async (resp) => {
           if (resp.error !== undefined) {
             console.error('Error Google Auth:', resp);
-            alert('Error de Google: ' + (resp.error_description || resp.error) + '\n\nRevise que el origen https://jhoelpeguero68-star.github.io esté autorizado en Google Cloud Console.');
+            alert('Aviso de Google: ' + (resp.error_description || resp.error));
             return;
           }
 
@@ -52,14 +43,14 @@ const GoogleSync = {
           await this.inicializarHojaCalculo();
 
           this.actualizarIndicadorUI();
-          alert(`✅ Conectado exitosamente con Google (${this.userEmail || 'Google Drive'}). La sincronización entre celular y PC está activa.`);
+          alert(`✅ ¡Conexión con Google Exitosa!\n\nUsuario: ${this.userEmail || 'Google Drive'}\nBase de datos: "PUJOLS Servicios - Base de Datos" en tu Google Drive.\n\nLa sincronización entre celular y PC está activa en tiempo real.`);
         }
       });
 
       this.tokenClient.requestAccessToken({ prompt: 'consent' });
     } catch (err) {
       console.error('Error al inicializar Google Token Client:', err);
-      this.abrirModalConfigGoogle();
+      alert('Error al iniciar con Google: ' + err.message);
     }
   },
 
