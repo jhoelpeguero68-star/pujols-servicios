@@ -39,6 +39,92 @@ const App = {
     if (window.GoogleSync) {
       window.GoogleSync.init();
     }
+
+    // 8. Verificar si se abrió desde el QR de la factura (Encuesta de Satisfacción e Instagram)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('encuesta') === '1') {
+      const facNo = urlParams.get('factura') || '';
+      setTimeout(() => {
+        this.mostrarModalEncuestaSatisfaccion(facNo);
+      }, 400);
+    }
+  },
+
+  mostrarModalEncuestaSatisfaccion(facturaNo = '') {
+    const existing = document.getElementById('modalEncuestaSatisfaccion');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'modalEncuestaSatisfaccion';
+    modal.className = 'modal-backdrop open';
+    modal.style.zIndex = '1200';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 480px; text-align: center; border-radius: 16px; overflow: hidden; padding: 0;">
+        <div style="background: linear-gradient(135deg, #0A2540 0%, #00AEEF 100%); padding: 24px 20px; color: #FFFFFF;">
+          <img src="assets/logo.jpg" alt="PUJOLS Servicios" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #FFFFFF; margin-bottom: 10px; background: #FFF;">
+          <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 4px; color: #FFF;">¿Qué tal fue tu experiencia hoy?</h2>
+          <p style="font-size: 13px; opacity: 0.9; margin: 0;">PUJOLS Servicios • Aire y Refrigeración</p>
+          ${facturaNo ? `<span style="display: inline-block; background: rgba(255,255,255,0.25); padding: 3px 12px; border-radius: 12px; font-size: 11.5px; font-weight: 600; margin-top: 8px;">Comprobante / Factura ${facturaNo}</span>` : ''}
+        </div>
+
+        <div class="modal-body" style="padding: 22px 18px;">
+          <p style="font-size: 14px; color: #334155; margin-bottom: 12px; font-weight: 600;">
+            Califica la calidad de nuestro servicio técnico:
+          </p>
+
+          <!-- 5 Estrellas Interactivas -->
+          <div id="starsRatingContainer" style="display: flex; justify-content: center; gap: 10px; font-size: 38px; cursor: pointer; margin-bottom: 20px;">
+            <span onclick="App.setRating(1)" class="star-item" style="color: #FBBF24;">★</span>
+            <span onclick="App.setRating(2)" class="star-item" style="color: #FBBF24;">★</span>
+            <span onclick="App.setRating(3)" class="star-item" style="color: #FBBF24;">★</span>
+            <span onclick="App.setRating(4)" class="star-item" style="color: #FBBF24;">★</span>
+            <span onclick="App.setRating(5)" class="star-item" style="color: #FBBF24;">★</span>
+          </div>
+
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+            <p style="font-size: 12.5px; color: #475569; margin-bottom: 12px; line-height: 1.4;">
+              ¡Tu testimonio es muy valioso para Marcos Pujols y todo el equipo! Déjanos un comentario o reseña en nuestras redes oficiales:
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <!-- Botón Instagram -->
+              <a href="https://www.instagram.com/pujols_servicios/" target="_blank" class="btn" style="background: linear-gradient(45deg, #F58529, #DD2A7B, #8134AF); color: #FFFFFF; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 11px; border-radius: 10px;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                📸 Comentar en Instagram @pujols_servicios
+              </a>
+
+              <!-- Botón Facebook -->
+              <a href="https://www.facebook.com/search/top?q=Pujols%20servicios" target="_blank" class="btn" style="background: #1877F2; color: #FFFFFF; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 11px; border-radius: 10px;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                📘 Comentar en Facebook (Pujols Servicios)
+              </a>
+
+              <!-- Botón WhatsApp -->
+              <a href="https://wa.me/18095550100?text=${encodeURIComponent('Hola Marcos Pujols, quiero felicitarles y dejar mi testimonio por el excelente trabajo en mi factura ' + facturaNo)}" target="_blank" class="btn" style="background: #25D366; color: #FFFFFF; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 11px; border-radius: 10px;">
+                💬 Enviar testimonio por WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: center; background: #F8FAFC; border-top: 1px solid #E2E8F0; padding: 14px;">
+          <button class="btn btn-outline" onclick="document.getElementById('modalEncuestaSatisfaccion').remove(); window.history.replaceState({}, document.title, window.location.pathname);">
+            Volver a la aplicación
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  },
+
+  setRating(stars) {
+    const container = document.getElementById('starsRatingContainer');
+    if (container) {
+      const starSpans = container.querySelectorAll('.star-item');
+      starSpans.forEach((s, idx) => {
+        s.style.color = idx < stars ? '#FBBF24' : '#CBD5E1';
+      });
+    }
   },
 
   actualizarFechaCabecera() {

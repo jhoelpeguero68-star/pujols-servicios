@@ -223,23 +223,33 @@ const FacturacionModule = {
           </div>
 
           <!-- Pie y Agradecimiento con onda decorativa -->
-          <div class="invoice-footer-decorative">
+          <div class="invoice-footer-decorative" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap;">
             <div class="invoice-thanks-text">
               <strong>¡Gracias por confiar en PUJOLS Servicios!</strong><br>
               Servicio confiable, equipos en buenas manos.<br>
-              <span style="font-size: 11px; color: var(--text-light);">Especialistas en Aires Acondicionados, Neveras y Lavadoras</span>
-            </div>
-            <div class="invoice-qr-box" style="width: 75px; height: 75px; min-width: 75px; background: #ffffff; padding: 3px; border: 1px solid #E2E8F0; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-              <img 
-                src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('PUJOLS SERVICIOS | Factura: ' + factura.numero + ' | Cliente: ' + factura.clienteNombre + ' | Monto: RD$ ' + factura.total + ' | Estado: ' + factura.estado + ' | Fecha: ' + (factura.fecha || ''))}" 
-                alt="QR Factura ${factura.numero}" 
-                style="width: 100%; height: 100%; object-fit: contain; display: block;"
-                onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';"
-              />
-              <div style="display: none; text-align: center; font-size: 8px; color: #0A2540; font-weight: 700; line-height: 1.1;">
-                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#0A2540" stroke-width="2" style="margin: 0 auto 2px auto; display: block;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                ${factura.numero}
+              <span style="font-size: 11px; color: var(--text-light);">Especialistas en Aires Acondicionados, Neveras y Lavadoras</span><br>
+              <div style="margin-top: 6px; font-size: 11px; color: var(--color-primary); font-weight: 600;">
+                📸 Instagram: <strong>@pujols_servicios</strong> &nbsp;•&nbsp; 📘 Facebook: <strong>Pujols Servicios</strong>
               </div>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;">
+              <a href="https://jhoelpeguero68-star.github.io/pujols-servicios/?encuesta=1&factura=${factura.numero}" target="_blank" style="text-decoration: none;">
+                <div class="invoice-qr-box" style="width: 82px; height: 82px; min-width: 82px; background: #ffffff; padding: 4px; border: 1.5px solid #00AEEF; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.06); cursor: pointer;" title="Haz clic o escanea para opinar en Instagram">
+                  <img 
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent('https://jhoelpeguero68-star.github.io/pujols-servicios/?encuesta=1&factura=' + factura.numero)}" 
+                    alt="QR Encuesta de Satisfacción en Instagram y Facebook" 
+                    style="width: 100%; height: 100%; object-fit: contain; display: block;"
+                    onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';"
+                  />
+                  <div style="display: none; text-align: center; font-size: 8px; color: #0A2540; font-weight: 700; line-height: 1.1;">
+                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#0A2540" stroke-width="2" style="margin: 0 auto 2px auto; display: block;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    ⭐ Encuesta
+                  </div>
+                </div>
+              </a>
+              <span style="font-size: 9px; font-weight: 700; color: #0A2540; line-height: 1.15;">
+                ⭐ Escanea para opinar<br><span style="color: #DD2A7B;">Instagram</span> y <span style="color: #1877F2;">Facebook</span>
+              </span>
             </div>
           </div>
 
