@@ -149,11 +149,8 @@ const DashboardModule = {
             <div style="display: flex; flex-direction: column; gap: 3px;">
               <label style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Mes:</label>
               <select class="form-select" style="padding: 6px 12px; font-size: 12px; font-weight: 600;" onchange="DashboardModule.setMonth(this.value)">
-                <option value="Oct" ${this.activeMonth === 'Oct' ? 'selected' : ''}>Octubre 2025</option>
-                <option value="Sep" ${this.activeMonth === 'Sep' ? 'selected' : ''}>Septiembre 2025</option>
-                <option value="Ago" ${this.activeMonth === 'Ago' ? 'selected' : ''}>Agosto 2025</option>
-                <option value="Jul" ${this.activeMonth === 'Jul' ? 'selected' : ''}>Julio 2025</option>
-                <option value="todos" ${this.activeMonth === 'todos' ? 'selected' : ''}>Todo el Trimestre (Jul-Oct)</option>
+                <option value="actual" ${this.activeMonth === 'actual' || this.activeMonth === 'Oct' ? 'selected' : ''}>Mes Actual (${window.DateUtil ? window.DateUtil.getCurrentMonthYearText() : 'Mes en curso'})</option>
+                <option value="todos" ${this.activeMonth === 'todos' ? 'selected' : ''}>Todo el Periodo</option>
               </select>
             </div>
 

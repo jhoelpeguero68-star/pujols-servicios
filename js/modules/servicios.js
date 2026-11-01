@@ -2,7 +2,11 @@
 
 const ServiciosModule = {
   currentTab: 'agenda', // 'agenda' | 'ordenes' | 'historial'
-  selectedDate: '14 oct 2025',
+  currentDateObj: new Date(),
+
+  getSelectedDateText() {
+    return window.DateUtil ? window.DateUtil.getFormatDateText(this.currentDateObj) : 'Hoy';
+  },
 
   render(container) {
     const servicios = window.store.getServicios();
@@ -42,7 +46,7 @@ const ServiciosModule = {
             <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></span>
           </button>
           <span style="font-size: 13px; font-weight: 700; color: var(--color-primary); min-width: 130px; text-align: center;">
-            📅 ${this.selectedDate}
+            📅 ${this.getSelectedDateText()}
           </span>
           <button class="btn btn-icon btn-sm btn-outline" style="border: none; width: 28px; height: 28px;" onclick="ServiciosModule.changeDate(1)">
             <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></span>
@@ -192,14 +196,7 @@ const ServiciosModule = {
   },
 
   changeDate(direction) {
-    // Demo date toggle
-    const dates = ['13 oct 2025', '14 oct 2025', '15 oct 2025', '16 oct 2025'];
-    let idx = dates.indexOf(this.selectedDate);
-    if (idx === -1) idx = 1;
-    let nextIdx = idx + direction;
-    if (nextIdx < 0) nextIdx = 0;
-    if (nextIdx >= dates.length) nextIdx = dates.length - 1;
-    this.selectedDate = dates[nextIdx];
+    this.currentDateObj.setDate(this.currentDateObj.getDate() + direction);
     const container = document.getElementById('view-servicios');
     if (container) this.render(container);
   },

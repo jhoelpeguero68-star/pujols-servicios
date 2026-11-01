@@ -336,11 +336,15 @@ const ConfiguracionModule = {
   },
 
   sincronizarAhora() {
-    const now = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + new Date().toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+    const now = (window.DateUtil ? window.DateUtil.getFormatDateText() + ' - ' + window.DateUtil.getLocalTimeString() : new Date().toLocaleDateString('es-DO'));
     window.store.updateEmpresa({ ultimaSincronizacion: now });
     const container = document.getElementById('view-configuracion');
     if (container) this.render(container);
-    alert(`Sincronización simulada completada exitosamente a las ${now}.`);
+    if (window.GoogleSync && window.GoogleSync.actualizarTodoDesdeSheet) {
+      window.GoogleSync.actualizarTodoDesdeSheet(true);
+    } else {
+      alert(`Sincronización completada exitosamente a las ${now}.`);
+    }
   },
 
   mostrarAyuda() {

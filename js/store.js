@@ -1,5 +1,80 @@
 // PUJOLS Servicios - Data Store & State Management
-// Centralized state with localStorage persistence and mock demonstration data
+// Zona Horaria Oficial: Santo Domingo, República Dominicana (America/Santo_Domingo, UTC-4)
+
+const DateUtil = {
+  TIMEZONE: 'America/Santo_Domingo',
+
+  // Fecha actual en formato YYYY-MM-DD para inputs HTML en la hora exacta de Santo Domingo
+  getISODate(d = new Date()) {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: this.TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(d);
+    } catch (e) {
+      return d.toISOString().split('T')[0];
+    }
+  },
+
+  // Fecha en formato DD/MM/YYYY en Santo Domingo
+  getLocalDateString(d = new Date()) {
+    try {
+      return new Intl.DateTimeFormat('es-DO', {
+        timeZone: this.TIMEZONE,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).format(d);
+    } catch (e) {
+      return d.toLocaleDateString('es-DO');
+    }
+  },
+
+  // Fecha en texto legible: ej. '1 nov 2026'
+  getFormatDateText(d = new Date()) {
+    try {
+      return new Intl.DateTimeFormat('es-DO', {
+        timeZone: this.TIMEZONE,
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      }).format(d);
+    } catch (e) {
+      return d.toLocaleDateString('es-DO');
+    }
+  },
+
+  // Hora actual en Santo Domingo: ej. '6:18 p. m.'
+  getLocalTimeString(d = new Date()) {
+    try {
+      return new Intl.DateTimeFormat('es-DO', {
+        timeZone: this.TIMEZONE,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }).format(d);
+    } catch (e) {
+      return d.toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+    }
+  },
+
+  // Mes y Año en Santo Domingo: ej. 'Noviembre 2026'
+  getCurrentMonthYearText(d = new Date()) {
+    try {
+      const t = new Intl.DateTimeFormat('es-DO', {
+        timeZone: this.TIMEZONE,
+        month: 'long',
+        year: 'numeric'
+      }).format(d);
+      return t.charAt(0).toUpperCase() + t.slice(1);
+    } catch (e) {
+      return 'Noviembre 2026';
+    }
+  }
+};
+window.DateUtil = DateUtil;
 
 const STORAGE_KEY = 'pujols_servicios_prod_v1';
 
@@ -853,7 +928,7 @@ class Store {
       correo: clienteData.correo || '',
       tipo: clienteData.tipo || 'Residencial',
       equiposCount: 0,
-      fechaRegistro: new Date().toISOString().split('T')[0],
+      fechaRegistro: DateUtil.getISODate(),
       colorBadge: randomColor,
       pendienteSincronizacion: !navigator.onLine
     };
@@ -904,9 +979,9 @@ class Store {
       marca: equipoData.marca || 'Marca estándar',
       modelo: equipoData.modelo || '2025',
       ubicacion: equipoData.ubicacion || 'General',
-      fechaInstalacion: equipoData.fechaInstalacion || new Date().toISOString().split('T')[0],
-      ultimoMantenimiento: new Date().toISOString().split('T')[0],
-      proximoMantenimiento: equipoData.proximoMantenimiento || '2025-12-15',
+      fechaInstalacion: equipoData.fechaInstalacion || DateUtil.getISODate(),
+      ultimoMantenimiento: DateUtil.getISODate(),
+      proximoMantenimiento: equipoData.proximoMantenimiento || '2026-12-15',
       estado: 'Operativo',
       icono: icono
     };
@@ -931,16 +1006,16 @@ class Store {
     const nextNum = this.state.servicios.length + 1;
     const nextOrd = 40 + nextNum;
     const newId = `SRV-${100 + nextNum}`;
-    const newOrdenId = `OT-2025-${String(nextOrd).padStart(3, '0')}`;
+    const newOrdenId = `OT-2026-${String(nextOrd).padStart(3, '0')}`;
     const cliente = this.getClienteById(servicioData.clienteId);
     const equipo = this.state.equipos.find(e => e.id === servicioData.equipoId);
 
     const newServicio = {
       id: newId,
       ordenId: newOrdenId,
-      hora: servicioData.hora || '9:00 a. m.',
-      fecha: servicioData.fecha || new Date().toISOString().split('T')[0],
-      fechaFormato: servicioData.fecha || '15 oct 2025',
+      hora: servicioData.hora || DateUtil.getLocalTimeString(),
+      fecha: servicioData.fecha || DateUtil.getISODate(),
+      fechaFormato: servicioData.fecha ? DateUtil.getFormatDateText(new Date(servicioData.fecha + 'T12:00:00')) : DateUtil.getFormatDateText(),
       tipo: servicioData.tipo || 'Mantenimiento',
       titulo: servicioData.titulo || `${servicioData.tipo || 'Servicio'} - ${cliente ? cliente.nombre : ''}`,
       clienteId: servicioData.clienteId,
@@ -995,8 +1070,8 @@ class Store {
       clienteNombre: cliente ? cliente.nombre : (facturaData.clienteNombre || 'Cliente General'),
       clienteTelefono: cliente ? cliente.telefono : '809-555-0100',
       clienteDireccion: cliente ? cliente.direccion : 'Santo Domingo, RD',
-      fecha: new Date().toLocaleDateString('es-DO'),
-      fechaISO: new Date().toISOString().split('T')[0],
+      fecha: DateUtil.getLocalDateString(),
+      fechaISO: DateUtil.getISODate(),
       fechaTexto: 'Hoy',
       estado: facturaData.estado || 'Pendiente',
       subtotal: facturaData.subtotal || facturaData.total || 0,
@@ -1090,7 +1165,7 @@ class Store {
       this.state.finanzas.transacciones.unshift({
         id: `TX-${Date.now()}`,
         tipo: 'Ingreso',
-        fecha: fac.fecha || new Date().toLocaleDateString('es-DO'),
+        fecha: fac.fecha || DateUtil.getLocalDateString(),
         concepto: `Cobro Factura ${fac.numero} - ${fac.clienteNombre}`,
         categoria: 'Servicios',
         monto: monto
@@ -1126,7 +1201,7 @@ class Store {
     const newTx = {
       id: `TX-${Date.now()}`,
       tipo: txData.tipo, // 'Ingreso' or 'Egreso'
-      fecha: new Date().toLocaleDateString('es-DO'),
+      fecha: DateUtil.getLocalDateString(),
       concepto: txData.concepto,
       categoria: txData.categoria || 'Operaciones',
       monto: monto
@@ -1423,7 +1498,7 @@ class Store {
   procesarColaSincronizacion() {
     const cantidad = (this.state.colaSincronizacion || []).length;
     this.state.colaSincronizacion = [];
-    const now = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + new Date().toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' });
+    const now = DateUtil.getFormatDateText() + ' - ' + DateUtil.getLocalTimeString();
     this.state.empresa.ultimaSincronizacion = now;
     this.saveState();
     return cantidad;

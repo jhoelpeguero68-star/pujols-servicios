@@ -18,6 +18,7 @@ const App = {
     }
 
     // 2. Cargar pantalla inicial
+    this.actualizarFechaCabecera();
     this.navigate('inicio');
 
     // 3. Suscribirse a cambios del store para re-renderizar la pantalla activa si es necesario
@@ -37,6 +38,13 @@ const App = {
     // 7. Inicializar Google Identity & Sheets Sync
     if (window.GoogleSync) {
       window.GoogleSync.init();
+    }
+  },
+
+  actualizarFechaCabecera() {
+    const headerMonth = document.getElementById('headerCurrentMonth');
+    if (headerMonth && window.DateUtil) {
+      headerMonth.textContent = window.DateUtil.getCurrentMonthYearText();
     }
   },
 
@@ -258,7 +266,7 @@ const App = {
 
     const fechaInput = document.getElementById('ordenFecha');
     if (fechaInput) {
-      fechaInput.value = new Date().toISOString().split('T')[0];
+      fechaInput.value = window.DateUtil ? window.DateUtil.getISODate() : new Date().toISOString().split('T')[0];
     }
   },
 
