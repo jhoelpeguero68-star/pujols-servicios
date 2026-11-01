@@ -1331,100 +1331,148 @@ class Store {
 
   // --- RECORDATORIOS METHODS ---
   getRecordatorios() {
-    // Si ya existe la estructura completa con equipoDestacado y timeline válido, devolverla
-    if (this.state.recordatorios && this.state.recordatorios.equipoDestacado && Array.isArray(this.state.recordatorios.equipoDestacado.timeline) && this.state.recordatorios.equipoDestacado.timeline.length > 0) {
-      return this.state.recordatorios;
-    }
-
-    // Generar recordatorios dinámicos basados en los clientes, equipos y servicios reales
-    const equipos = this.state.equipos || [];
-    const clientes = this.state.clientes || [];
-    const servicios = this.state.servicios || [];
-
-    let eqDestacado = null;
-    if (equipos.length > 0) {
-      const eq = equipos[0];
-      const cl = clientes.find(c => c.id === eq.clienteId) || { nombre: eq.clienteNombre || 'Cliente', telefono: '829-725-4450' };
-      const proxFecha = eq.proximoMantenimiento || (window.DateUtil ? window.DateUtil.getFormatDateText() : 'Próximamente');
-      eqDestacado = {
-        id: eq.id,
-        titulo: `${eq.tipo} - ${cl.nombre}`,
-        especificaciones: `${eq.marca || ''} ${eq.capacidad || ''} • Instalado: ${eq.fechaInstalacion || 'Reciente'}`,
-        clienteNombre: cl.nombre,
-        clienteTelefono: cl.telefono || cl.whatsapp || '829-725-4450',
-        timeline: [
-          {
-            tiempo: "Próximo servicio",
-            fecha: proxFecha,
-            titulo: "Mantenimiento Preventivo Periódico",
-            activo: true,
-            mensajeTexto: `Hola ${cl.nombre}, le saludamos de PUJOLS Servicios. Le recordamos con agrado que su equipo ${eq.tipo} (${eq.marca || ''} ${eq.capacidad || ''}) tiene programado su próximo mantenimiento preventivo. ¿Desea coordinar la visita técnica con George Pujols?`
-          },
-          {
-            tiempo: "En 6 meses",
-            fecha: "Semestral",
-            titulo: "Revisión General y Limpieza Profunda",
-            activo: false,
-            mensajeTexto: `Hola ${cl.nombre}, le recordamos desde PUJOLS Servicios que corresponde la revisión de presión, limpieza y chequeo preventivo de su ${eq.tipo}.`
-          }
-        ]
-      };
-    } else if (clientes.length > 0) {
-      const cl = clientes[0];
-      eqDestacado = {
-        id: "REC-CL1",
-        titulo: `Plan de Mantenimiento - ${cl.nombre}`,
-        especificaciones: `${cl.direccion || 'Santo Domingo'} • Cliente Activo`,
-        clienteNombre: cl.nombre,
-        clienteTelefono: cl.telefono || cl.whatsapp || '829-725-4450',
-        timeline: [
-          {
-            tiempo: "Preventivo",
-            fecha: window.DateUtil ? window.DateUtil.getFormatDateText() : 'Hoy',
-            titulo: "Mantenimiento Preventivo Periódico",
-            activo: true,
-            mensajeTexto: `Hola ${cl.nombre}, un cordial saludo de PUJOLS Servicios. Le escribimos para recordarle coordinar su mantenimiento preventivo de climatización o refrigeración para mantener sus equipos funcionando de forma eficiente. ¿Le gustaría coordinar una visita técnica esta semana?`
-          }
-        ]
-      };
-    } else {
-      eqDestacado = {
-        id: "REC-GENERAL",
-        titulo: "Seguimiento Preventivo de Climatización",
-        especificaciones: "Mantenimiento de Aires Acondicionados y Refrigeración",
-        clienteNombre: "Cliente PUJOLS Servicios",
-        clienteTelefono: "829-725-4450",
-        timeline: [
-          {
-            tiempo: "Recordatorio",
-            fecha: window.DateUtil ? window.DateUtil.getFormatDateText() : 'Hoy',
-            titulo: "Mantenimiento Preventivo Periódico",
-            activo: true,
-            mensajeTexto: `Hola, reciba un atento saludo de PUJOLS Servicios. Le recordamos que realizar el mantenimiento preventivo a tiempo garantiza un aire más puro y reduce el consumo eléctrico. ¿Podemos coordinar su revisión técnica?`
-          }
-        ]
+    if (!this.state.recordatorios || Array.isArray(this.state.recordatorios)) {
+      this.state.recordatorios = {
+        equipoDestacado: null,
+        otrosRecordatorios: []
       };
     }
-
-    const otrosRecordatorios = [];
-    if (servicios.length > 0) {
-      servicios.slice(0, 5).forEach((srv, idx) => {
-        otrosRecordatorios.push({
-          id: `REC-${srv.id || idx}`,
-          cliente: srv.clienteNombre || 'Cliente',
-          equipo: srv.equipoNombre || srv.titulo || 'Equipo',
-          fechaVencimiento: srv.fechaFormato || srv.fecha || 'Pendiente',
-          estado: srv.estado || 'Programado',
-          telefono: srv.clienteTelefono || '829-725-4450',
-          mensaje: `Estimado/a ${srv.clienteNombre}, reciba un saludo de PUJOLS Servicios. Le recordamos su servicio técnico programado de ${srv.equipoNombre || 'mantenimiento'} pautado para ${srv.fechaFormato || srv.fecha}.`
-        });
-      });
+    if (!Array.isArray(this.state.recordatorios.otrosRecordatorios)) {
+      this.state.recordatorios.otrosRecordatorios = [];
     }
 
-    return {
-      equipoDestacado: eqDestacado,
-      otrosRecordatorios: otrosRecordatorios
+    // Inicializar equipoDestacado si aún no está configurado
+    if (!this.state.recordatorios.equipoDestacado || !Array.isArray(this.state.recordatorios.equipoDestacado.timeline) || this.state.recordatorios.equipoDestacado.timeline.length === 0) {
+      const equipos = this.state.equipos || [];
+      const clientes = this.state.clientes || [];
+
+      if (equipos.length > 0) {
+        const eq = equipos[0];
+        const cl = clientes.find(c => c.id === eq.clienteId) || { nombre: eq.clienteNombre || 'Cliente', telefono: '829-725-4450' };
+        const proxFecha = eq.proximoMantenimiento || (window.DateUtil ? window.DateUtil.getFormatDateText() : 'Próximamente');
+        this.state.recordatorios.equipoDestacado = {
+          id: eq.id,
+          titulo: `${eq.tipo} - ${cl.nombre}`,
+          especificaciones: `${eq.marca || ''} ${eq.capacidad || ''} • Instalado: ${eq.fechaInstalacion || 'Reciente'}`,
+          clienteNombre: cl.nombre,
+          clienteTelefono: cl.telefono || cl.whatsapp || '829-725-4450',
+          timeline: [
+            {
+              tiempo: "Próximo servicio",
+              fecha: proxFecha,
+              titulo: "Mantenimiento Preventivo Periódico",
+              activo: true,
+              mensajeTexto: `Hola ${cl.nombre}, le saludamos de PUJOLS Servicios. Le recordamos con agrado que su equipo ${eq.tipo} (${eq.marca || ''} ${eq.capacidad || ''}) tiene programado su próximo mantenimiento preventivo. ¿Desea coordinar la visita técnica con George Pujols?`
+            },
+            {
+              tiempo: "En 6 meses",
+              fecha: "Semestral",
+              titulo: "Revisión General y Limpieza Profunda",
+              activo: false,
+              mensajeTexto: `Hola ${cl.nombre}, le recordamos desde PUJOLS Servicios que corresponde la revisión de presión, limpieza y chequeo preventivo de su ${eq.tipo}.`
+            }
+          ]
+        };
+      } else if (clientes.length > 0) {
+        const cl = clientes[0];
+        this.state.recordatorios.equipoDestacado = {
+          id: "REC-CL1",
+          titulo: `Plan de Mantenimiento - ${cl.nombre}`,
+          especificaciones: `${cl.direccion || 'Santo Domingo'} • Cliente Activo`,
+          clienteNombre: cl.nombre,
+          clienteTelefono: cl.telefono || cl.whatsapp || '829-725-4450',
+          timeline: [
+            {
+              tiempo: "Preventivo",
+              fecha: window.DateUtil ? window.DateUtil.getFormatDateText() : 'Hoy',
+              titulo: "Mantenimiento Preventivo Periódico",
+              activo: true,
+              mensajeTexto: `Hola ${cl.nombre}, un cordial saludo de PUJOLS Servicios. Le escribimos para recordarle coordinar su mantenimiento preventivo de climatización o refrigeración. ¿Le gustaría coordinar una visita técnica esta semana?`
+            }
+          ]
+        };
+      } else {
+        this.state.recordatorios.equipoDestacado = {
+          id: "REC-GENERAL",
+          titulo: "Seguimiento Preventivo de Climatización",
+          especificaciones: "Mantenimiento de Aires Acondicionados y Refrigeración",
+          clienteNombre: "Cliente PUJOLS Servicios",
+          clienteTelefono: "829-725-4450",
+          timeline: [
+            {
+              tiempo: "Recordatorio",
+              fecha: window.DateUtil ? window.DateUtil.getFormatDateText() : 'Hoy',
+              titulo: "Mantenimiento Preventivo Periódico",
+              activo: true,
+              mensajeTexto: `Hola, reciba un atento saludo de PUJOLS Servicios. Le recordamos que realizar el mantenimiento preventivo a tiempo garantiza un aire más puro y reduce el consumo eléctrico. ¿Podemos coordinar su revisión técnica?`
+            }
+          ]
+        };
+      }
+    }
+
+    return this.state.recordatorios;
+  }
+
+  addRecordatorio(recData) {
+    const rec = this.getRecordatorios();
+    const newRec = {
+      id: recData.id || `REC-${Date.now()}`,
+      cliente: recData.cliente || 'Cliente',
+      equipo: recData.equipo || 'Equipo Climatización',
+      fechaVencimiento: recData.fechaVencimiento || (window.DateUtil ? window.DateUtil.getFormatDateText() : 'Próximamente'),
+      fechaISO: recData.fechaISO || (window.DateUtil ? window.DateUtil.getLocalDateString() : new Date().toISOString().split('T')[0]),
+      estado: recData.estado || 'Programado',
+      telefono: recData.telefono || '829-725-4450',
+      mensaje: recData.mensaje || `Estimado/a ${recData.cliente}, le saludamos de PUJOLS Servicios para recordarle su fecha de mantenimiento preventivo para su ${recData.equipo || 'equipo'}. ¿Desea coordinar la visita técnica?`
     };
+
+    rec.otrosRecordatorios.unshift(newRec);
+    this.saveState();
+    return newRec;
+  }
+
+  updateRecordatorio(recId, updatedData) {
+    const rec = this.getRecordatorios();
+    const index = rec.otrosRecordatorios.findIndex(r => r.id === recId);
+    if (index === -1) return false;
+
+    const r = rec.otrosRecordatorios[index];
+    if (updatedData.cliente !== undefined) r.cliente = updatedData.cliente;
+    if (updatedData.equipo !== undefined) r.equipo = updatedData.equipo;
+    if (updatedData.fechaVencimiento !== undefined) r.fechaVencimiento = updatedData.fechaVencimiento;
+    if (updatedData.fechaISO !== undefined) r.fechaISO = updatedData.fechaISO;
+    if (updatedData.estado !== undefined) r.estado = updatedData.estado;
+    if (updatedData.telefono !== undefined) r.telefono = updatedData.telefono;
+    if (updatedData.mensaje !== undefined) r.mensaje = updatedData.mensaje;
+
+    this.saveState();
+    return true;
+  }
+
+  deleteRecordatorio(recId) {
+    const rec = this.getRecordatorios();
+    const index = rec.otrosRecordatorios.findIndex(r => r.id === recId);
+    if (index === -1) return false;
+
+    rec.otrosRecordatorios.splice(index, 1);
+    this.saveState();
+    return true;
+  }
+
+  updateTimelineRecordatorio(index, updatedData) {
+    const rec = this.getRecordatorios();
+    if (!rec.equipoDestacado || !Array.isArray(rec.equipoDestacado.timeline)) return false;
+    const node = rec.equipoDestacado.timeline[index];
+    if (!node) return false;
+
+    if (updatedData.fecha !== undefined) node.fecha = updatedData.fecha;
+    if (updatedData.tiempo !== undefined) node.tiempo = updatedData.tiempo;
+    if (updatedData.titulo !== undefined) node.titulo = updatedData.titulo;
+    if (updatedData.mensajeTexto !== undefined) node.mensajeTexto = updatedData.mensajeTexto;
+
+    this.saveState();
+    return true;
   }
 
   // --- EMPRESA & CONFIG METHODS ---
