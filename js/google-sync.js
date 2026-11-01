@@ -9,6 +9,7 @@ const GoogleSync = {
   
   tokenClient: null,
   accessToken: localStorage.getItem('pujols_google_token') || null,
+  tokenExpiresAt: Number(localStorage.getItem('pujols_google_token_expiry')) || 0,
   userEmail: localStorage.getItem('pujols_google_email') || null,
   spreadsheetId: localStorage.getItem('pujols_google_sheet_id') || null,
   isSyncing: false,
@@ -16,12 +17,43 @@ const GoogleSync = {
   init() {
     console.log('Iniciando servicio de sincronización Google Sheets...');
     this.actualizarIndicadorUI();
+
+    // Si hay sesión registrada, verificar vigencia o renovar silenciosamente
+    if (this.accessToken || this.userEmail) {
+      if (this.tokenExpiresAt && Date.now() > this.tokenExpiresAt) {
+        console.log('Token de Google expirado. Programando renovación silenciosa...');
+        setTimeout(() => this.renovarTokenSilencioso(), 1500);
+      } else {
+        console.log('Sesión activa con Google:', this.userEmail);
+      }
+    }
+  },
+
+  isTokenValid() {
+    return Boolean(this.accessToken && (!this.tokenExpiresAt || Date.now() < this.tokenExpiresAt));
+  },
+
+  async asegurarTokenValido() {
+    if (!this.isTokenValid() && this.userEmail) {
+      console.log('Asegurando token válido para Google API...');
+      await this.renovarTokenSilencioso();
+    }
+    return this.accessToken;
+  },
+
+  renovarTokenSilencioso() {
+    return new Promise((resolve) => {
+      this.conectarConGoogle({ silent: true, prompt: '' }, () => resolve(this.accessToken));
+    });
   },
 
   // Iniciar flujo de sincronización con Google Identity / Google Sheets
-  conectarConGoogle() {
+  conectarConGoogle(options = { silent: false, prompt: '' }, onComplete = null) {
     if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-      alert('Cargando servicios oficiales de Google... Por favor intente en un momento.');
+      if (!options.silent) {
+        alert('Cargando servicios oficiales de Google... Por favor intente en un momento.');
+      }
+      if (onComplete) onComplete(null);
       return;
     }
 
@@ -31,77 +63,43 @@ const GoogleSync = {
         scope: this.SCOPES,
         callback: async (resp) => {
           if (resp.error !== undefined) {
-            console.error('Error Google Auth:', resp);
-            alert('Aviso de Google: ' + (resp.error_description || resp.error));
+            console.warn('Google Auth notice/error:', resp);
+            if (!options.silent) {
+              alert('Aviso de Google: ' + (resp.error_description || resp.error));
+            }
+            if (onComplete) onComplete(null);
             return;
           }
 
           this.accessToken = resp.access_token;
+          const expiresIn = resp.expires_in ? Number(resp.expires_in) : 3600;
+          this.tokenExpiresAt = Date.now() + (expiresIn - 60) * 1000;
+
           localStorage.setItem('pujols_google_token', this.accessToken);
+          localStorage.setItem('pujols_google_token_expiry', this.tokenExpiresAt);
 
           await this.obtenerPerfilGoogle();
           await this.inicializarHojaCalculo();
 
           this.actualizarIndicadorUI();
-          alert(`✅ ¡Conexión con Google Exitosa!\n\nUsuario: ${this.userEmail || 'Google Drive'}\nBase de datos: "PUJOLS Servicios - Base de Datos" en tu Google Drive.\n\nLa sincronización entre celular y PC está activa en tiempo real.`);
+
+          if (!options.silent) {
+            alert(`✅ ¡Conexión con Google Exitosa!\n\nUsuario: ${this.userEmail || 'Google Drive'}\nBase de datos: "PUJOLS Servicios - Base de Datos" en tu Google Drive.\n\nLa sincronización entre celular y PC está activa en tiempo real.`);
+          }
+
+          if (onComplete) onComplete(this.accessToken);
         }
       });
 
-      this.tokenClient.requestAccessToken({ prompt: 'consent' });
+      const promptParam = options.prompt !== undefined ? options.prompt : (this.userEmail ? '' : 'select_account');
+      this.tokenClient.requestAccessToken({ prompt: promptParam });
     } catch (err) {
       console.error('Error al inicializar Google Token Client:', err);
-      alert('Error al iniciar con Google: ' + err.message);
+      if (!options.silent) {
+        alert('Error al iniciar con Google: ' + err.message);
+      }
+      if (onComplete) onComplete(null);
     }
-  },
-
-  // Modal para configurar Client ID o conectar Google Sheets
-  abrirModalConfigGoogle() {
-    const existing = document.getElementById('modalConfigGoogleAuth');
-    if (existing) existing.remove();
-
-    const savedClientId = localStorage.getItem('pujols_google_client_id') || '';
-    const modal = document.createElement('div');
-    modal.id = 'modalConfigGoogleAuth';
-    modal.className = 'modal-backdrop open';
-    modal.style.zIndex = '1000';
-    modal.innerHTML = `
-      <div class="modal-content" style="max-width: 520px;">
-        <div class="modal-header">
-          <h3 class="modal-title">🔐 Conexión con Google Sheets</h3>
-          <button class="modal-close-btn" onclick="document.getElementById('modalConfigGoogleAuth').remove()">
-            <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; color: #1E40AF;">
-            Para que Google autorice a la app a sincronizar con tu Google Drive sin bloqueos, debes ingresar tu <strong>Client ID de Google Cloud Console</strong> con el dominio autorizado:
-            <br><code style="background: #FFFFFF; padding: 2px 6px; border-radius: 4px; font-size: 11px; display: inline-block; margin-top: 4px;">https://jhoelpeguero68-star.github.io</code>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Client ID de Google OAuth 2.0:</label>
-            <input type="text" id="inputGoogleClientId" class="form-input" placeholder="Ej: 123456789-xxxx.apps.googleusercontent.com" value="${savedClientId}">
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Se genera gratis en Google Cloud Console ➡️ Credenciales ➡️ ID de cliente de OAuth.</div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline" onclick="document.getElementById('modalConfigGoogleAuth').remove()">Cancelar</button>
-          <button class="btn btn-primary" onclick="GoogleSync.guardarClientId()">💾 Guardar y Conectar</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-  },
-
-  guardarClientId() {
-    const cid = (document.getElementById('inputGoogleClientId').value || '').trim();
-    if (!cid) {
-      alert('Por favor ingrese su Client ID de Google Cloud.');
-      return;
-    }
-    localStorage.setItem('pujols_google_client_id', cid);
-    document.getElementById('modalConfigGoogleAuth').remove();
-    this.conectarConGoogle();
   },
 
   // Obtener correo del usuario autenticado
@@ -114,7 +112,9 @@ const GoogleSync = {
         const data = await res.json();
         this.userEmail = data.email;
         localStorage.setItem('pujols_google_email', this.userEmail);
-        window.store.updateEmpresa({ gmail: this.userEmail, googleDriveSync: true, googleSheetsSync: true });
+        if (window.store && window.store.updateEmpresa) {
+          window.store.updateEmpresa({ gmail: this.userEmail, googleDriveSync: true, googleSheetsSync: true });
+        }
       }
     } catch (e) {
       console.warn('No se pudo obtener el correo de perfil:', e);
@@ -216,10 +216,11 @@ const GoogleSync = {
     }
   },
 
-  // Sincronizar un nuevo cliente creado hacia Google Sheets
+  // Sincronizar un nuevo cliente hacia Google Sheets (inserta o actualiza)
   async sincronizarNuevoCliente(c) {
+    await this.asegurarTokenValido();
     if (!this.spreadsheetId || !this.accessToken) {
-      window.store.addToSyncQueue('cliente', c);
+      if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('cliente', c);
       return;
     }
 
@@ -238,6 +239,27 @@ const GoogleSync = {
         new Date().toLocaleDateString('es-DO')
       ];
 
+      // Verificar si ya existe en la columna A
+      const checkRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Clientes!A2:A`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const existingIndex = checkData.values ? checkData.values.findIndex(r => r[0] === c.id) : -1;
+        if (existingIndex !== -1) {
+          const rowIndex = existingIndex + 2;
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Clientes!A${rowIndex}:K${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ values: [row] })
+          });
+          console.log(`Cliente actualizado en fila ${rowIndex} de Google Sheets:`, c.nombre);
+          return;
+        }
+      }
+
+      // Si no existe, insertar nueva fila
       await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Clientes!A:K:append?valueInputOption=USER_ENTERED`, {
         method: 'POST',
         headers: {
@@ -248,15 +270,74 @@ const GoogleSync = {
       });
       console.log('Cliente sincronizado en Google Sheets:', c.nombre);
     } catch (e) {
-      console.warn('Guardando cliente en cola offline:', e);
-      window.store.addToSyncQueue('cliente', c);
+      console.warn('Error sincronizando cliente, guardando en cola offline:', e);
+      if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('cliente', c);
     }
   },
 
-  // Sincronizar una nueva factura emitida hacia Google Sheets
-  async sincronizarNuevaFactura(f) {
+  // Sincronizar un nuevo servicio / cita agendada hacia Google Sheets (inserta o actualiza)
+  async sincronizarNuevoServicio(s) {
+    await this.asegurarTokenValido();
     if (!this.spreadsheetId || !this.accessToken) {
-      window.store.addToSyncQueue('factura', f);
+      if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('servicio', s);
+      return;
+    }
+
+    try {
+      const srvId = s.ordenId || s.id;
+      const row = [
+        srvId,
+        s.clienteNombre || 'Cliente General',
+        s.equipoNombre || 'Equipo General',
+        s.tipo || 'Mantenimiento',
+        s.fechaFormato || s.fecha || new Date().toLocaleDateString('es-DO'),
+        s.hora || '9:00 a. m.',
+        s.tecnico || 'Marcos Pujols',
+        s.estado || 'Programado',
+        s.costo || 0
+      ];
+
+      // Verificar si el servicio ya existe en la columna A de la hoja Servicios
+      const checkRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Servicios!A2:A`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const existingIndex = checkData.values ? checkData.values.findIndex(r => r[0] === srvId) : -1;
+        if (existingIndex !== -1) {
+          const rowIndex = existingIndex + 2;
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Servicios!A${rowIndex}:I${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ values: [row] })
+          });
+          console.log(`Servicio actualizado en fila ${rowIndex} de Google Sheets:`, srvId);
+          return;
+        }
+      }
+
+      // Si no existe, agregar fila a Servicios
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Servicios!A:I:append?valueInputOption=USER_ENTERED`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ values: [row] })
+      });
+      console.log('Servicio sincronizado en Google Sheets:', srvId);
+    } catch (e) {
+      console.warn('Error sincronizando servicio en Google Sheets:', e);
+      if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('servicio', s);
+    }
+  },
+
+  // Sincronizar una factura emitida o actualizada hacia Google Sheets
+  async sincronizarNuevaFactura(f) {
+    await this.asegurarTokenValido();
+    if (!this.spreadsheetId || !this.accessToken) {
+      if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('factura', f);
       return;
     }
 
@@ -271,6 +352,27 @@ const GoogleSync = {
         f.clienteTelefono || ''
       ];
 
+      // Verificar si la factura ya existe en Facturas!A2:A para actualizar su estado (Pendiente <-> Pagada)
+      const checkRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Facturas!A2:A`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const existingIndex = checkData.values ? checkData.values.findIndex(r => r[0] === f.numero) : -1;
+        if (existingIndex !== -1) {
+          const rowIndex = existingIndex + 2;
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Facturas!A${rowIndex}:G${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ values: [row] })
+          });
+          console.log(`Factura ${f.numero} actualizada (Estado: ${f.estado}) en fila ${rowIndex} de Google Sheets`);
+          return;
+        }
+      }
+
+      // Si no existe, agregarla
       await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Facturas!A:G:append?valueInputOption=USER_ENTERED`, {
         method: 'POST',
         headers: {
@@ -279,21 +381,23 @@ const GoogleSync = {
         },
         body: JSON.stringify({ values: [row] })
       });
-      console.log('Factura sincronizada en Google Sheets:', f.numero);
+      console.log('Factura agregada a Google Sheets:', f.numero);
     } catch (e) {
-      window.store.addToSyncQueue('factura', f);
+      console.warn('Error al sincronizar factura:', e);
+      if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('factura', f);
     }
   },
 
   // Subir todos los datos actuales a la hoja de cálculo
   async subirTodosLosDatosASheet() {
+    await this.asegurarTokenValido();
     const st = window.store.state;
     if (!st || !this.spreadsheetId || !this.accessToken) return;
 
-    // Clientes rows
+    // 1. Clientes
     if (st.clientes && st.clientes.length > 0) {
       const rows = st.clientes.map(c => [
-        c.id, c.nombre, c.tipo || 'Residencial', c.telefono, c.whatsapp, c.correo, c.direccion, c.lat || '', c.lng || '', c.mapUrl || '', new Date().toLocaleDateString('es-DO')
+        c.id, c.nombre, c.tipo || 'Residencial', c.telefono || '', c.whatsapp || '', c.correo || '', c.direccion || '', c.lat || '', c.lng || '', c.mapUrl || '', new Date().toLocaleDateString('es-DO')
       ]);
       await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Clientes!A2:K?valueInputOption=USER_ENTERED`, {
         method: 'PUT',
@@ -302,10 +406,30 @@ const GoogleSync = {
       });
     }
 
-    // Facturas rows
+    // 2. Servicios
+    if (st.servicios && st.servicios.length > 0) {
+      const sRows = st.servicios.map(s => [
+        s.ordenId || s.id,
+        s.clienteNombre || 'Cliente',
+        s.equipoNombre || 'Equipo',
+        s.tipo || 'Mantenimiento',
+        s.fechaFormato || s.fecha,
+        s.hora || '9:00 a. m.',
+        s.tecnico || 'Marcos Pujols',
+        s.estado || 'Programado',
+        s.costo || 0
+      ]);
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Servicios!A2:I?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: sRows })
+      });
+    }
+
+    // 3. Facturas
     if (st.facturas && st.facturas.length > 0) {
       const fRows = st.facturas.map(f => [
-        f.numero, f.fecha, f.clienteNombre, (f.items && f.items[0] ? f.items[0].descripcion : 'Servicio'), f.total, f.estado, f.clienteTelefono || ''
+        f.numero, f.fecha, f.clienteNombre, (f.items && f.items[0] ? f.items[0].descripcion : 'Servicio técnico'), f.total, f.estado, f.clienteTelefono || ''
       ]);
       await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Facturas!A2:G?valueInputOption=USER_ENTERED`, {
         method: 'PUT',
@@ -313,6 +437,20 @@ const GoogleSync = {
         body: JSON.stringify({ values: fRows })
       });
     }
+
+    // 4. Finanzas (transacciones)
+    if (st.finanzas && Array.isArray(st.finanzas.transacciones) && st.finanzas.transacciones.length > 0) {
+      const txRows = st.finanzas.transacciones.map(t => [
+        t.id, t.tipo, t.fecha, t.concepto, t.categoria || 'General', t.monto || 0
+      ]);
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A2:F?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: txRows })
+      });
+    }
+
+    console.log('Todos los datos se sincronizaron con Google Sheets exitosamente.');
   },
 
   // Descargar los datos desde Google Sheets hacia la aplicación local
@@ -356,22 +494,56 @@ const GoogleSync = {
 
   actualizarIndicadorUI() {
     const label = document.getElementById('googleSyncStatusLabel');
-    if (label) {
-      if (this.accessToken && this.userEmail) {
-        label.innerHTML = `🟢 <strong>Conectado a Google:</strong> ${this.userEmail} • Sincronización en tiempo real activa`;
-        label.style.color = '#166534';
-      } else {
+    const btn = document.getElementById('btnConectarGoogleTop');
+
+    if (this.accessToken && this.userEmail) {
+      const isExpired = this.tokenExpiresAt && Date.now() > this.tokenExpiresAt;
+      if (label) {
+        if (isExpired) {
+          label.innerHTML = `🟡 <strong>Sesión Google pausada:</strong> ${this.userEmail} • Pulse "Reconectar" para reactivar`;
+          label.style.color = '#B45309';
+        } else {
+          label.innerHTML = `🟢 <strong>Conectado a Google:</strong> ${this.userEmail} • Sincronización en tiempo real activa`;
+          label.style.color = '#166534';
+        }
+      }
+      if (btn) {
+        if (isExpired) {
+          btn.innerHTML = `🔄 Reconectar Google`;
+          btn.style.color = '#B45309';
+          btn.style.borderColor = '#F59E0B';
+          btn.style.background = '#FFFBEB';
+        } else {
+          btn.innerHTML = `✅ Conectado (${this.userEmail.split('@')[0]})`;
+          btn.style.color = '#166534';
+          btn.style.borderColor = '#86EFAC';
+          btn.style.background = '#F0FDF4';
+        }
+      }
+    } else {
+      if (label) {
         label.innerHTML = `⚪ Sincronización con Google Sheets disponible. Pulse para iniciar sesión.`;
         label.style.color = 'var(--text-muted)';
+      }
+      if (btn) {
+        btn.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 6px; pointer-events: none;">
+          <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          Conectar Google Sheets
+        </span>`;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+        btn.style.background = '#FFFFFF';
       }
     }
   },
 
   desconectar() {
     this.accessToken = null;
+    this.tokenExpiresAt = 0;
     this.userEmail = null;
     this.spreadsheetId = null;
     localStorage.removeItem('pujols_google_token');
+    localStorage.removeItem('pujols_google_token_expiry');
     localStorage.removeItem('pujols_google_email');
     localStorage.removeItem('pujols_google_sheet_id');
     this.actualizarIndicadorUI();

@@ -79,11 +79,15 @@ const FacturacionModule = {
               <div class="invoice-client">${f.clienteNombre}</div>
               <div class="invoice-date">${f.fechaTexto || f.fecha}</div>
             </div>
-            <div class="invoice-right">
+            <div class="invoice-right" style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
               <div class="invoice-amount">RD$ ${f.total.toLocaleString('en-US')}</div>
-              <span class="badge ${f.estado === 'Pagada' ? 'badge-pagada' : 'badge-pendiente'}">
-                ${f.estado}
-              </span>
+              <button 
+                class="badge ${f.estado === 'Pagada' ? 'badge-pagada' : 'badge-pendiente'}" 
+                style="cursor: pointer; border: none; padding: 4px 10px; font-weight: 600;"
+                title="Clic para cambiar estado a ${f.estado === 'Pagada' ? 'Pendiente' : 'Pagada'}"
+                onclick="event.stopPropagation(); FacturacionModule.toggleEstadoRapido('${f.numero}')">
+                ${f.estado === 'Pagada' ? '✅ Pagada' : '⏳ Pendiente'} ⇄
+              </button>
             </div>
           </div>
         `).join('')}
@@ -225,10 +229,16 @@ const FacturacionModule = {
               Servicio confiable, equipos en buenas manos.<br>
               <span style="font-size: 11px; color: var(--text-light);">Especialistas en Aires Acondicionados, Neveras y Lavadoras</span>
             </div>
-            <div class="invoice-qr-box">
-              <div style="text-align: center; font-size: 10px; color: var(--color-primary); font-weight: 700;">
-                [QR DEMO]<br>
-                VALIDADO
+            <div class="invoice-qr-box" style="width: 75px; height: 75px; min-width: 75px; background: #ffffff; padding: 3px; border: 1px solid #E2E8F0; border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <img 
+                src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('PUJOLS SERVICIOS | Factura: ' + factura.numero + ' | Cliente: ' + factura.clienteNombre + ' | Monto: RD$ ' + factura.total + ' | Estado: ' + factura.estado + ' | Fecha: ' + (factura.fecha || ''))}" 
+                alt="QR Factura ${factura.numero}" 
+                style="width: 100%; height: 100%; object-fit: contain; display: block;"
+                onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';"
+              />
+              <div style="display: none; text-align: center; font-size: 8px; color: #0A2540; font-weight: 700; line-height: 1.1;">
+                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#0A2540" stroke-width="2" style="margin: 0 auto 2px auto; display: block;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                ${factura.numero}
               </div>
             </div>
           </div>
@@ -240,11 +250,15 @@ const FacturacionModule = {
 
     if (footerEl) {
       footerEl.innerHTML = `
-        ${factura.estado !== 'Pagada' ? `
-          <button class="btn btn-soft" onclick="FacturacionModule.marcarPagada('${factura.numero}')">
+        ${factura.estado === 'Pagada' ? `
+          <button class="btn btn-outline" style="border-color: #F59E0B; color: #B45309; background: #FFFBEB;" onclick="FacturacionModule.cambiarEstado('${factura.numero}', 'Pendiente')">
+            🔄 Cambiar a Pendiente
+          </button>
+        ` : `
+          <button class="btn btn-soft" style="background: #D1FAE5; color: #065F46; font-weight: 600;" onclick="FacturacionModule.cambiarEstado('${factura.numero}', 'Pagada')">
             ✅ Marcar como Pagada
           </button>
-        ` : ''}
+        `}
         <button class="btn btn-outline" onclick="FacturacionModule.compartirWhatsApp('${factura.numero}')">
           💬 Compartir por WhatsApp
         </button>
@@ -267,11 +281,32 @@ const FacturacionModule = {
     window.print();
   },
 
-  marcarPagada(numero) {
-    window.store.marcarFacturaPagada(numero);
+  cambiarEstado(numero, nuevoEstado) {
+    window.store.cambiarEstadoFactura(numero, nuevoEstado);
     this.openInvoicePreview(numero);
     const container = document.getElementById('view-facturacion');
     if (container) this.render(container);
+    if (window.DashboardModule && document.getElementById('view-inicio')) {
+      const dbContainer = document.getElementById('view-inicio');
+      window.DashboardModule.render(dbContainer);
+    }
+  },
+
+  toggleEstadoRapido(numero) {
+    const fac = window.store.getFacturas().find(f => f.numero === numero);
+    if (!fac) return;
+    const nuevo = fac.estado === 'Pagada' ? 'Pendiente' : 'Pagada';
+    window.store.cambiarEstadoFactura(numero, nuevo);
+    const container = document.getElementById('view-facturacion');
+    if (container) this.render(container);
+    if (window.DashboardModule && document.getElementById('view-inicio')) {
+      const dbContainer = document.getElementById('view-inicio');
+      window.DashboardModule.render(dbContainer);
+    }
+  },
+
+  marcarPagada(numero) {
+    this.cambiarEstado(numero, 'Pagada');
   },
 
   compartirWhatsApp(numero) {

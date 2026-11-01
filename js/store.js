@@ -718,7 +718,7 @@ class Store {
     this.state.equipos = [];
     this.state.servicios = [];
     this.state.facturas = [];
-    this.state.finanzas = { ingresos: [], egresos: [] };
+    this.state.finanzas = { ingresos: 0, egresos: 0, resultadoNeto: 0, transacciones: [], resumenMensual: [] };
     this.state.recordatorios = [];
     this.state.colaSincronizacion = [];
     this.state.indicadores = {
@@ -897,6 +897,11 @@ class Store {
     this.state.servicios.unshift(newServicio);
     this.state.indicadores.serviciosMes += 1;
     this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevoServicio) {
+      window.GoogleSync.sincronizarNuevoServicio(newServicio);
+    }
+
     return newServicio;
   }
 
@@ -905,6 +910,11 @@ class Store {
     if (srv) {
       srv.estado = nuevoEstado;
       this.saveState();
+
+      if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevoServicio) {
+        window.GoogleSync.sincronizarNuevoServicio(srv);
+      }
+
       return true;
     }
     return false;
@@ -947,15 +957,31 @@ class Store {
 
     // If marked paid, also update finances
     if (newFactura.estado === 'Pagada') {
-      this.state.finanzas.ingresos += newFactura.total;
-      this.state.finanzas.resultadoNeto += newFactura.total;
+      const montoPagado = Number(newFactura.total) || 0;
+      if (!this.state.finanzas) {
+        this.state.finanzas = { ingresos: 0, egresos: 0, resultadoNeto: 0, transacciones: [], resumenMensual: [] };
+      }
+      if (!Array.isArray(this.state.finanzas.transacciones)) {
+        this.state.finanzas.transacciones = [];
+      }
+      if (typeof this.state.finanzas.ingresos !== 'number') this.state.finanzas.ingresos = 0;
+      if (typeof this.state.finanzas.resultadoNeto !== 'number') this.state.finanzas.resultadoNeto = 0;
+      if (!this.state.indicadores) {
+        this.state.indicadores = { ingresosMes: 0, egresosMes: 0, resultadoNeto: 0, serviciosMes: 0, clientesTotal: 0 };
+      }
+
+      this.state.finanzas.ingresos += montoPagado;
+      this.state.finanzas.resultadoNeto += montoPagado;
+      this.state.indicadores.ingresosMes = (this.state.indicadores.ingresosMes || 0) + montoPagado;
+      this.state.indicadores.resultadoNeto = (this.state.indicadores.resultadoNeto || 0) + montoPagado;
+
       this.state.finanzas.transacciones.unshift({
         id: `TX-${Date.now()}`,
         tipo: 'Ingreso',
         fecha: newFactura.fecha,
         concepto: `Factura ${newFactura.numero} - ${newFactura.clienteNombre}`,
         categoria: 'Servicios',
-        monto: newFactura.total
+        monto: montoPagado
       });
     }
 
@@ -969,23 +995,66 @@ class Store {
   }
 
   marcarFacturaPagada(numero) {
+    return this.cambiarEstadoFactura(numero, 'Pagada');
+  }
+
+  cambiarEstadoFactura(numero, nuevoEstado) {
     const fac = this.state.facturas.find(f => f.numero === numero);
-    if (fac && fac.estado !== 'Pagada') {
-      fac.estado = 'Pagada';
-      this.state.finanzas.ingresos += fac.total;
-      this.state.finanzas.resultadoNeto += fac.total;
+    if (!fac) return false;
+
+    const estadoAnterior = fac.estado;
+    if (estadoAnterior === nuevoEstado) return true;
+
+    fac.estado = nuevoEstado;
+
+    // Asegurar estructura de finanzas e indicadores
+    if (!this.state.finanzas) {
+      this.state.finanzas = { ingresos: 0, egresos: 0, resultadoNeto: 0, transacciones: [], resumenMensual: [] };
+    }
+    if (!Array.isArray(this.state.finanzas.transacciones)) {
+      this.state.finanzas.transacciones = [];
+    }
+    if (typeof this.state.finanzas.ingresos !== 'number') this.state.finanzas.ingresos = 0;
+    if (typeof this.state.finanzas.resultadoNeto !== 'number') this.state.finanzas.resultadoNeto = 0;
+    if (!this.state.indicadores) {
+      this.state.indicadores = { ingresosMes: 0, egresosMes: 0, resultadoNeto: 0, serviciosMes: 0, clientesTotal: 0 };
+    }
+
+    const monto = Number(fac.total) || 0;
+
+    if (nuevoEstado === 'Pagada' && estadoAnterior !== 'Pagada') {
+      this.state.finanzas.ingresos += monto;
+      this.state.finanzas.resultadoNeto += monto;
+      this.state.indicadores.ingresosMes = (this.state.indicadores.ingresosMes || 0) + monto;
+      this.state.indicadores.resultadoNeto = (this.state.indicadores.resultadoNeto || 0) + monto;
+
       this.state.finanzas.transacciones.unshift({
         id: `TX-${Date.now()}`,
         tipo: 'Ingreso',
-        fecha: fac.fecha,
+        fecha: fac.fecha || new Date().toLocaleDateString('es-DO'),
         concepto: `Cobro Factura ${fac.numero} - ${fac.clienteNombre}`,
         categoria: 'Servicios',
-        monto: fac.total
+        monto: monto
       });
-      this.saveState();
-      return true;
+    } else if (nuevoEstado === 'Pendiente' && estadoAnterior === 'Pagada') {
+      this.state.finanzas.ingresos = Math.max(0, this.state.finanzas.ingresos - monto);
+      this.state.finanzas.resultadoNeto -= monto;
+      this.state.indicadores.ingresosMes = Math.max(0, (this.state.indicadores.ingresosMes || 0) - monto);
+      this.state.indicadores.resultadoNeto -= monto;
+
+      const txIndex = this.state.finanzas.transacciones.findIndex(t => t.concepto && t.concepto.includes(fac.numero));
+      if (txIndex !== -1) {
+        this.state.finanzas.transacciones.splice(txIndex, 1);
+      }
     }
-    return false;
+
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevaFactura) {
+      window.GoogleSync.sincronizarNuevaFactura(fac);
+    }
+
+    return true;
   }
 
   // --- FINANZAS METHODS ---

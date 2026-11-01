@@ -1,5 +1,5 @@
 // Service Worker for PUJOLS Servicios PWA
-const CACHE_NAME = 'pujols-servicios-v12';
+const CACHE_NAME = 'pujols-servicios-v13';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   './css/components.css',
   './css/print.css',
   './js/store.js',
+  './js/google-sync.js',
   './js/app.js',
   './js/modules/auth.js',
   './js/modules/dashboard.js',
