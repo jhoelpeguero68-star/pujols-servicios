@@ -465,50 +465,184 @@ const GoogleSync = {
     console.log('Todos los datos se sincronizaron con Google Sheets exitosamente.');
   },
 
-  // Descargar los datos desde Google Sheets hacia la aplicación local
-  async descargarDatosDeSheet() {
+  // Sincronizar y actualizar todos los datos (Clientes, Servicios, Facturas, Finanzas) desde Google Sheets
+  async actualizarTodoDesdeSheet(mostrarAlerta = false) {
+    if (!this.userEmail && !this.accessToken) {
+      if (confirm('Aún no has conectado tu cuenta de Google en este dispositivo.\n\n¿Deseas conectar Google Sheets ahora para sincronizar tus clientes y servicios?')) {
+        this.conectarConGoogle({ silent: false }, async () => {
+          await this.descargarDatosDeSheet(mostrarAlerta);
+        });
+      }
+      return;
+    }
+
+    await this.asegurarTokenValido();
+    if (!this.accessToken) {
+      this.conectarConGoogle({ silent: false }, async () => {
+        await this.descargarDatosDeSheet(mostrarAlerta);
+      });
+      return;
+    }
+
+    await this.descargarDatosDeSheet(mostrarAlerta);
+  },
+
+  // Descargar todos los datos desde Google Sheets hacia la aplicación local
+  async descargarDatosDeSheet(mostrarAlerta = false) {
     if (!this.spreadsheetId || !this.accessToken) return;
 
     try {
-      const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Clientes!A2:K`, {
+      let clientesCount = 0;
+      let serviciosCount = 0;
+      let facturasCount = 0;
+
+      // 1. Descargar Clientes (Clientes!A2:K)
+      const resClientes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Clientes!A2:K`, {
         headers: { Authorization: `Bearer ${this.accessToken}` }
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (resClientes.ok) {
+        const data = await resClientes.json();
         if (data.values && data.values.length > 0) {
-          // Si el usuario limpió los datos de prueba y la hoja en Google aún contiene clientes de demostración, no restaurar datos falsos
-          const contieneDemo = data.values.some(r => r[0] === 'C-001' && (r[1] || '').includes('Juan Pérez'));
-          if (window.store && window.store.state && window.store.state.datosLimpiados && contieneDemo) {
-            console.log('Se detectaron datos demo en Google Sheets tras la limpieza. Limpiando hoja para producción...');
-            await this.limpiarHojasParaProduccion();
-            return;
+          // Filtrar cualquier fila demo de Juan Pérez
+          const reales = data.values.filter(r => r[0] && r[1] && !(r[0] === 'C-001' && (r[1] || '').includes('Juan Pérez')));
+          
+          if (reales.length > 0) {
+            window.store.state.clientes = reales.map(r => ({
+              id: r[0],
+              nombre: r[1],
+              iniciales: (r[1] || 'NC').substring(0, 2).toUpperCase(),
+              tipo: r[2] || 'Residencial',
+              telefono: r[3] || '',
+              whatsapp: r[4] || r[3] || '',
+              correo: r[5] || '',
+              direccion: r[6] || '',
+              lat: r[7] ? Number(r[7]) : null,
+              lng: r[8] ? Number(r[8]) : null,
+              mapUrl: r[9] || (r[6] ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r[6])}` : ''),
+              equiposCount: 1,
+              avatarBg: '#0A2540'
+            }));
+            clientesCount = window.store.state.clientes.length;
+            window.store.state.indicadores.clientesTotal = clientesCount;
           }
-
-          const clientesFromSheet = data.values.map(r => ({
-            id: r[0],
-            nombre: r[1],
-            iniciales: (r[1] || 'NC').substring(0, 2).toUpperCase(),
-            tipo: r[2] || 'Residencial',
-            telefono: r[3] || '',
-            whatsapp: r[4] || r[3] || '',
-            correo: r[5] || '',
-            direccion: r[6] || '',
-            lat: r[7] ? Number(r[7]) : null,
-            lng: r[8] ? Number(r[8]) : null,
-            mapUrl: r[9] || (r[6] ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r[6])}` : ''),
-            equiposCount: 1,
-            avatarBg: '#0A2540'
-          }));
-
-          window.store.state.clientes = clientesFromSheet;
-          window.store.state.indicadores.clientesTotal = clientesFromSheet.length;
-          window.store.saveState();
-          console.log('Clientes descargados desde Google Sheets:', clientesFromSheet.length);
         }
+      }
+
+      // 2. Descargar Servicios (Servicios!A2:I)
+      // ['ID', 'Cliente', 'Equipo', 'Tipo Servicio', 'Fecha', 'Hora', 'Técnico', 'Estado', 'Monto (RD$)']
+      const resServicios = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Servicios!A2:I`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+
+      if (resServicios.ok) {
+        const data = await resServicios.json();
+        if (data.values && data.values.length > 0) {
+          const reales = data.values.filter(r => r[0] && r[1]);
+          if (reales.length > 0) {
+            window.store.state.servicios = reales.map(r => ({
+              id: r[0],
+              ordenId: r[0],
+              clienteNombre: r[1],
+              equipoNombre: r[2] || 'Equipo General',
+              tipo: r[3] || 'Mantenimiento',
+              titulo: `${r[3] || 'Servicio'} - ${r[1]}`,
+              fecha: r[4] || new Date().toISOString().split('T')[0],
+              fechaFormato: r[4] || 'Hoy',
+              hora: r[5] || '9:00 a. m.',
+              tecnico: r[6] || 'Marcos Pujols',
+              estado: r[7] || 'Programado',
+              costo: Number(r[8]) || 0,
+              descripcion: 'Servicio registrado y sincronizado desde Google Sheets.'
+            }));
+            serviciosCount = window.store.state.servicios.length;
+            window.store.state.indicadores.serviciosMes = serviciosCount;
+            window.store.state.indicadores.citasPendientes = window.store.state.servicios.filter(s => s.estado !== 'Completado').length;
+          }
+        }
+      }
+
+      // 3. Descargar Facturas (Facturas!A2:G)
+      // ['No. Factura', 'Fecha', 'Cliente', 'Concepto', 'Total (RD$)', 'Estado', 'Teléfono']
+      const resFacturas = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Facturas!A2:G`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+
+      if (resFacturas.ok) {
+        const data = await resFacturas.json();
+        if (data.values && data.values.length > 0) {
+          const reales = data.values.filter(r => r[0] && !(r[0] === 'F-000125' && (r[2] || '').includes('Juan Pérez')));
+          if (reales.length > 0) {
+            window.store.state.facturas = reales.map(r => ({
+              numero: r[0],
+              fecha: r[1] || new Date().toLocaleDateString('es-DO'),
+              fechaISO: new Date().toISOString().split('T')[0],
+              fechaTexto: r[1] || 'Hoy',
+              clienteNombre: r[2] || 'Cliente',
+              clienteTelefono: r[6] || '',
+              estado: r[5] || 'Pendiente',
+              subtotal: Number(r[4]) || 0,
+              descuento: 0,
+              total: Number(r[4]) || 0,
+              items: [{
+                cantidad: 1,
+                descripcion: r[3] || 'Servicio técnico PUJOLS Servicios',
+                precioUnitario: Number(r[4]) || 0,
+                total: Number(r[4]) || 0
+              }]
+            }));
+            facturasCount = window.store.state.facturas.length;
+          }
+        }
+      }
+
+      // 4. Descargar Finanzas (Finanzas!A2:F)
+      const resFinanzas = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A2:F`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+
+      if (resFinanzas.ok) {
+        const data = await resFinanzas.json();
+        if (data.values && data.values.length > 0) {
+          window.store.state.finanzas.transacciones = data.values.map(r => ({
+            id: r[0],
+            tipo: r[1],
+            fecha: r[2],
+            concepto: r[3],
+            categoria: r[4] || 'General',
+            monto: Number(r[5]) || 0
+          }));
+        }
+      }
+
+      // 5. Calcular finanzas reales a partir de las facturas sincronizadas
+      const totalIngresos = window.store.state.facturas
+        .filter(f => f.estado === 'Pagada')
+        .reduce((sum, f) => sum + (Number(f.total) || 0), 0);
+
+      window.store.state.finanzas.ingresos = totalIngresos;
+      window.store.state.indicadores.ingresosMes = totalIngresos;
+      window.store.state.finanzas.resultadoNeto = totalIngresos - (window.store.state.finanzas.egresos || 0);
+      window.store.state.indicadores.resultadoNeto = window.store.state.finanzas.resultadoNeto;
+
+      // Asegurar que no queden residuos demo
+      window.store.state.datosLimpiados = true;
+      window.store.saveState();
+
+      if (window.App && window.App.refreshCurrentScreen) {
+        window.App.refreshCurrentScreen();
+      }
+
+      this.actualizarIndicadorUI();
+
+      if (mostrarAlerta) {
+        alert(`✅ ¡Sincronización Exitosa!\n\nSe han actualizado desde Google Sheets:\n• ${clientesCount} clientes\n• ${serviciosCount} órdenes de servicio\n• ${facturasCount} facturas\n\nTus dispositivos están sincronizados en tiempo real.`);
       }
     } catch (e) {
       console.warn('Error al descargar datos de Google Sheets:', e);
+      if (mostrarAlerta) {
+        alert('Hubo un error al actualizar desde Google Sheets: ' + e.message);
+      }
     }
   },
 
