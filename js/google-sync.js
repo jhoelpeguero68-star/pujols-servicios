@@ -387,7 +387,7 @@ const GoogleSync = {
         s.tipo || 'Mantenimiento',
         s.fechaFormato || s.fecha || new Date().toLocaleDateString('es-DO'),
         s.hora || '9:00 a. m.',
-        s.tecnico || 'Marcos Pujols',
+        s.tecnico || 'George Pujols',
         s.estado || 'Programado',
         s.costo || 0
       ];
@@ -556,7 +556,7 @@ const GoogleSync = {
         s.tipo || 'Mantenimiento',
         s.fechaFormato || s.fecha,
         s.hora || '9:00 a. m.',
-        s.tecnico || 'Marcos Pujols',
+        s.tecnico || 'George Pujols',
         s.estado || 'Programado',
         s.costo || 0
       ]);
@@ -684,7 +684,7 @@ const GoogleSync = {
               fecha: r[4] || new Date().toISOString().split('T')[0],
               fechaFormato: r[4] || 'Hoy',
               hora: r[5] || '9:00 a. m.',
-              tecnico: r[6] || 'Marcos Pujols',
+              tecnico: r[6] || 'George Pujols',
               estado: r[7] || 'Programado',
               costo: Number(r[8]) || 0,
               descripcion: 'Servicio registrado y sincronizado desde Google Sheets.'

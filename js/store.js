@@ -421,7 +421,7 @@ const DEMO_DATA = {
       clienteNombre: "Juan Pérez",
       equipoId: "EQ-001",
       equipoNombre: "Aire acondicionado - 12,000 BTU (Sala)",
-      tecnico: "Marcos Pujols",
+      tecnico: "George Pujols",
       estado: "Programado",
       costo: 4500,
       descripcion: "Mantenimiento preventivo de aire acondicionado 12,000 BTU. Limpieza profunda con hidro-lavadora, desinfección de turbina y verificación de presiones."
@@ -455,7 +455,7 @@ const DEMO_DATA = {
       clienteNombre: "María López",
       equipoId: "EQ-005",
       equipoNombre: "Aire acondicionado LG 18,000 BTU",
-      tecnico: "Marcos Pujols",
+      tecnico: "George Pujols",
       estado: "Programado",
       costo: 8900,
       descripcion: "Instalación de unidad Split Inverter, montaje de soporte de condensador, vacío con bomba de 2 etapas y prueba de hermeticidad."
@@ -489,7 +489,7 @@ const DEMO_DATA = {
       clienteNombre: "Juan Pérez",
       equipoId: "EQ-001",
       equipoNombre: "Aire acondicionado - 12,000 BTU",
-      tecnico: "Marcos Pujols",
+      tecnico: "George Pujols",
       estado: "Programado",
       costo: 4500,
       descripcion: "Mantenimiento preventivo de aire acondicionado Juan Pérez (Sala)."
@@ -523,7 +523,7 @@ const DEMO_DATA = {
       clienteNombre: "María López",
       equipoId: "EQ-005",
       equipoNombre: "A/C Inverter",
-      tecnico: "Marcos Pujols",
+      tecnico: "George Pujols",
       estado: "Programado",
       costo: 6500,
       descripcion: "Instalación y conexión de tubería de cobre y cable de señal."
@@ -835,6 +835,13 @@ class Store {
             parsed.empresa.whatsappNumero = '8297254450';
           }
         }
+        if (Array.isArray(parsed.servicios)) {
+          parsed.servicios.forEach(s => {
+            if (s.tecnico === 'Marcos Pujols' || s.tecnico === 'Marco Pujols') {
+              s.tecnico = 'George Pujols';
+            }
+          });
+        }
         return parsed;
       }
     } catch (e) {
@@ -1034,7 +1041,7 @@ class Store {
       clienteNombre: cliente ? cliente.nombre : 'Cliente',
       equipoId: servicioData.equipoId || (equipo ? equipo.id : ''),
       equipoNombre: equipo ? `${equipo.tipo} - ${equipo.capacidad}` : 'Equipo General',
-      tecnico: servicioData.tecnico || 'Marcos Pujols',
+      tecnico: servicioData.tecnico || 'George Pujols',
       estado: servicioData.estado || 'Programado',
       costo: Number(servicioData.costo) || 4500,
       descripcion: servicioData.descripcion || 'Servicio técnico programado PUJOLS Servicios.'

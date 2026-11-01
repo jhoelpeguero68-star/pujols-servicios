@@ -83,7 +83,7 @@ const App = {
 
           <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-bottom: 14px;">
             <p style="font-size: 12.5px; color: #475569; margin-bottom: 12px; line-height: 1.4;">
-              ¡Tu testimonio es muy valioso para Marcos Pujols y todo el equipo! Déjanos un comentario o reseña en nuestras redes oficiales:
+              ¡Tu testimonio es muy valioso para George Pujols y todo el equipo de PUJOLS Servicios! Déjanos un comentario o reseña en nuestras redes oficiales:
             </p>
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -100,7 +100,7 @@ const App = {
               </a>
 
               <!-- Botón WhatsApp -->
-              <a href="https://wa.me/18297254450?text=${encodeURIComponent('Hola Marcos Pujols, quiero felicitarles y dejar mi testimonio por el excelente trabajo en mi factura ' + facturaNo)}" target="_blank" class="btn" style="background: #25D366; color: #FFFFFF; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 11px; border-radius: 10px;">
+              <a href="https://wa.me/18297254450?text=${encodeURIComponent('Hola George Pujols / PUJOLS Servicios, quiero felicitarles y dejar mi testimonio por el excelente trabajo en mi factura ' + facturaNo)}" target="_blank" class="btn" style="background: #25D366; color: #FFFFFF; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 11px; border-radius: 10px;">
                 💬 Enviar mensaje por WhatsApp (829-725-4450)
               </a>
 

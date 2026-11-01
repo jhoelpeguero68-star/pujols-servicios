@@ -234,22 +234,23 @@ const FacturacionModule = {
               </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;">
-              <a href="https://jhoelpeguero68-star.github.io/pujols-servicios/?encuesta=1&factura=${factura.numero}" target="_blank" style="text-decoration: none;">
-                <div class="invoice-qr-box" style="width: 82px; height: 82px; min-width: 82px; background: #ffffff; padding: 4px; border: 1.5px solid #00AEEF; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.06); cursor: pointer;" title="Haz clic o escanea para opinar en Instagram">
+              <a href="https://www.instagram.com/pujols_servicios/" target="_blank" style="text-decoration: none;">
+                <div class="invoice-qr-box" style="width: 82px; height: 82px; min-width: 82px; background: #ffffff; padding: 4px; border: 1.5px solid #00AEEF; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.06); cursor: pointer;" title="Haz clic o escanea para visitar @pujols_servicios en Instagram">
                   <img 
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent('https://jhoelpeguero68-star.github.io/pujols-servicios/?encuesta=1&factura=' + factura.numero)}" 
-                    alt="QR Encuesta de Satisfacción en Instagram y Facebook" 
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent('https://www.instagram.com/pujols_servicios/')}" 
+                    alt="QR Instagram @pujols_servicios" 
                     style="width: 100%; height: 100%; object-fit: contain; display: block;"
                     onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';"
                   />
                   <div style="display: none; text-align: center; font-size: 8px; color: #0A2540; font-weight: 700; line-height: 1.1;">
                     <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#0A2540" stroke-width="2" style="margin: 0 auto 2px auto; display: block;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                    ⭐ Encuesta
+                    ⭐ Instagram
                   </div>
                 </div>
               </a>
               <span style="font-size: 9px; font-weight: 700; color: #0A2540; line-height: 1.25;">
-                ⭐ Escanea para opinar<br><span style="color: #DD2A7B;">Instagram</span> y <span style="color: #1877F2;">Facebook</span><br>
+                ⭐ Escanea para opinar<br>
+                <span style="color: #DD2A7B; font-weight: 800;">@pujols_servicios</span><br>
                 <span style="display: inline-block; margin-top: 3px; color: #166534; font-size: 10px; font-weight: 800; background: #DCFCE7; padding: 1px 6px; border-radius: 4px;">
                   📞 829 725 4450
                 </span>
