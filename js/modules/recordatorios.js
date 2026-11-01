@@ -2,9 +2,17 @@
 
 const RecordatoriosModule = {
   render(container) {
-    const rec = window.store.getRecordatorios();
-    const eqDestacado = rec.equipoDestacado;
-    const otros = rec.otrosRecordatorios || [];
+    const rec = window.store.getRecordatorios() || {};
+    const eqDestacado = rec.equipoDestacado || {
+      id: "REC-DEF",
+      titulo: "Seguimiento Preventivo",
+      especificaciones: "Mantenimiento Periódico PUJOLS Servicios",
+      clienteNombre: "Cliente",
+      clienteTelefono: "829-725-4450",
+      timeline: []
+    };
+    const timeline = Array.isArray(eqDestacado.timeline) ? eqDestacado.timeline : [];
+    const otros = Array.isArray(rec.otrosRecordatorios) ? rec.otrosRecordatorios : [];
 
     container.innerHTML = `
       <!-- Cabecera de Recordatorios -->
@@ -21,7 +29,7 @@ const RecordatoriosModule = {
         </button>
       </div>
 
-      <!-- Tarjeta de Equipo Destacado (Fiel a la maqueta de referencia) -->
+      <!-- Tarjeta de Equipo Destacado -->
       <div class="reminder-header-card">
         <div class="reminder-device-icon">
           <span class="icon" style="width: 28px; height: 28px;">
@@ -45,7 +53,11 @@ const RecordatoriosModule = {
         </div>
 
         <div class="timeline-list">
-          ${eqDestacado.timeline.map((node, index) => `
+          ${timeline.length === 0 ? `
+            <div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 13.5px;">
+              No hay recordatorios pendientes en la secuencia actualmente.
+            </div>
+          ` : timeline.map((node, index) => `
             <div class="timeline-item">
               <div class="timeline-node ${node.activo ? 'filled' : ''}"></div>
               <div class="timeline-content-card" style="cursor: pointer;" onclick="RecordatoriosModule.abrirMensaje(${index})">
@@ -67,7 +79,7 @@ const RecordatoriosModule = {
         <!-- Caja de Información de WhatsApp -->
         <div class="reminder-info-box">
           <span class="icon" style="flex-shrink: 0; color: #0284C7;"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></span>
-          <span>Los mensajes se preparan para abrir en WhatsApp. Debes confirmar su envío.</span>
+          <span>Los mensajes se preparan para abrir en WhatsApp con el texto listo. Debes confirmar su envío.</span>
         </div>
 
         <div style="text-align: center;">
@@ -85,7 +97,11 @@ const RecordatoriosModule = {
         </div>
 
         <div class="list-container">
-          ${otros.map(item => `
+          ${otros.length === 0 ? `
+            <div style="text-align: center; padding: 28px 16px; color: var(--text-muted); font-size: 13.5px;">
+              Todos los clientes y equipos están al día con sus servicios preventivos.
+            </div>
+          ` : otros.map(item => `
             <div style="padding: 14px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; background: #FFFFFF; flex-wrap: wrap; gap: 10px;">
               <div>
                 <strong style="color: var(--color-primary); font-size: 14px;">${item.cliente}</strong>
@@ -94,10 +110,10 @@ const RecordatoriosModule = {
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="badge ${item.estado.includes('Vencido') ? 'badge-cancelado' : 'badge-programado'}">
-                  ${item.estado}
+                <span class="badge ${item.estado && item.estado.includes('Vencido') ? 'badge-cancelado' : 'badge-programado'}">
+                  ${item.estado || 'Programado'}
                 </span>
-                <button class="btn btn-sm btn-outline" onclick="RecordatoriosModule.enviarDirecto('${item.cliente}', '${item.telefono}', '${item.mensaje}')">
+                <button class="btn btn-sm btn-outline" onclick="RecordatoriosModule.enviarDirecto('${item.cliente ? item.cliente.replace(/'/g, "\\'") : 'Cliente'}', '${item.telefono || '829-725-4450'}', '${item.mensaje ? item.mensaje.replace(/'/g, "\\'") : ''}')">
                   WhatsApp
                 </button>
               </div>
@@ -130,9 +146,18 @@ const RecordatoriosModule = {
   },
 
   abrirMensaje(index) {
-    const rec = window.store.getRecordatorios();
-    const eq = rec.equipoDestacado;
-    const item = eq.timeline[index] || eq.timeline[0];
+    const rec = window.store.getRecordatorios() || {};
+    const eq = rec.equipoDestacado || {
+      clienteNombre: "Cliente PUJOLS Servicios",
+      clienteTelefono: "829-725-4450",
+      titulo: "Equipo Climatización",
+      especificaciones: "Mantenimiento Preventivo",
+      timeline: []
+    };
+    const timeline = Array.isArray(eq.timeline) ? eq.timeline : [];
+    const item = timeline[index] || timeline[0] || {
+      mensajeTexto: "Hola, le saludamos de PUJOLS Servicios. Le recordamos con agrado que corresponde coordinar su próximo mantenimiento preventivo de climatización o refrigeración. ¿Podemos coordinar la visita técnica?"
+    };
 
     const bodyEl = document.getElementById('whatsappModalBody');
     const btnSend = document.getElementById('btnConfirmarWhatsApp');
@@ -150,7 +175,7 @@ const RecordatoriosModule = {
         </div>
 
         <div style="font-size: 11.5px; color: var(--text-light); font-style: italic;">
-          Al presionar el botón se abrirá WhatsApp con el texto listo.
+          Al presionar el botón se abrirá WhatsApp con el texto listo para enviar.
         </div>
       `;
     }
@@ -158,7 +183,7 @@ const RecordatoriosModule = {
     if (btnSend) {
       btnSend.onclick = () => {
         const textVal = document.getElementById('textoMensajeWA').value;
-        const phone = eq.clienteTelefono.replace(/\D/g, '');
+        const phone = (eq.clienteTelefono || '829-725-4450').replace(/\D/g, '');
         window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(textVal)}`, '_blank');
         RecordatoriosModule.cerrarMensaje();
       };
@@ -174,7 +199,7 @@ const RecordatoriosModule = {
   },
 
   enviarDirecto(cliente, telefono, mensaje) {
-    const phone = telefono.replace(/\D/g, '');
+    const phone = (telefono || '829-725-4450').replace(/\D/g, '');
     window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(mensaje)}`, '_blank');
   }
 };
