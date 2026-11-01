@@ -171,7 +171,7 @@ const FacturacionModule = {
               <div style="font-size: 11px; text-transform: uppercase; color: var(--text-light); font-weight: 700; margin-bottom: 4px;">Emisor:</div>
               <strong style="font-size: 14px; color: var(--color-primary);">${empresa.nombre}</strong><br>
               <span>RNC: ${empresa.rnc}</span><br>
-              <span>Tel: ${empresa.telefono}</span><br>
+              <span>Tel: ${empresa.telefono || '829-725-4450'}</span><br>
               <span>${empresa.direccion}</span>
             </div>
             <div>
@@ -228,8 +228,9 @@ const FacturacionModule = {
               <strong>¡Gracias por confiar en PUJOLS Servicios!</strong><br>
               Servicio confiable, equipos en buenas manos.<br>
               <span style="font-size: 11px; color: var(--text-light);">Especialistas en Aires Acondicionados, Neveras y Lavadoras</span><br>
-              <div style="margin-top: 6px; font-size: 11px; color: var(--color-primary); font-weight: 600;">
-                📸 Instagram: <strong>@pujols_servicios</strong> &nbsp;•&nbsp; 📘 Facebook: <strong>Pujols Servicios</strong>
+              <div style="margin-top: 6px; font-size: 11px; color: var(--color-primary); font-weight: 600; line-height: 1.4;">
+                📸 Instagram: <strong>@pujols_servicios</strong> &nbsp;•&nbsp; 📘 Facebook: <strong>Pujols Servicios</strong><br>
+                📞 Tel / WhatsApp: <strong>(829) 725-4450</strong>
               </div>
             </div>
             <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;">
@@ -247,8 +248,11 @@ const FacturacionModule = {
                   </div>
                 </div>
               </a>
-              <span style="font-size: 9px; font-weight: 700; color: #0A2540; line-height: 1.15;">
-                ⭐ Escanea para opinar<br><span style="color: #DD2A7B;">Instagram</span> y <span style="color: #1877F2;">Facebook</span>
+              <span style="font-size: 9px; font-weight: 700; color: #0A2540; line-height: 1.25;">
+                ⭐ Escanea para opinar<br><span style="color: #DD2A7B;">Instagram</span> y <span style="color: #1877F2;">Facebook</span><br>
+                <span style="display: inline-block; margin-top: 3px; color: #166534; font-size: 10px; font-weight: 800; background: #DCFCE7; padding: 1px 6px; border-radius: 4px;">
+                  📞 829 725 4450
+                </span>
               </span>
             </div>
           </div>

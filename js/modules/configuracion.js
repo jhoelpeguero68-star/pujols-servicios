@@ -253,9 +253,9 @@ const ConfiguracionModule = {
 
           <div class="form-group">
             <label class="form-label">📱 Número de WhatsApp / teléfono:</label>
-            <input type="tel" id="cfgWaNumero" class="form-input" placeholder="8095551234"
-              value="${empresa.whatsappNumero || empresa.telefono || ''}" />
-            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Número con código de área, sin espacios ni guiones. Ej: 8095551234</div>
+            <input type="tel" id="cfgWaNumero" class="form-input" placeholder="8297254450"
+              value="${empresa.whatsappNumero || empresa.telefono || '829-725-4450'}" />
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Número con código de área, sin espacios ni guiones. Ej: 8297254450</div>
           </div>
 
           <div class="form-group">

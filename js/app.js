@@ -100,8 +100,13 @@ const App = {
               </a>
 
               <!-- Botón WhatsApp -->
-              <a href="https://wa.me/18095550100?text=${encodeURIComponent('Hola Marcos Pujols, quiero felicitarles y dejar mi testimonio por el excelente trabajo en mi factura ' + facturaNo)}" target="_blank" class="btn" style="background: #25D366; color: #FFFFFF; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 11px; border-radius: 10px;">
-                💬 Enviar testimonio por WhatsApp
+              <a href="https://wa.me/18297254450?text=${encodeURIComponent('Hola Marcos Pujols, quiero felicitarles y dejar mi testimonio por el excelente trabajo en mi factura ' + facturaNo)}" target="_blank" class="btn" style="background: #25D366; color: #FFFFFF; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 11px; border-radius: 10px;">
+                💬 Enviar mensaje por WhatsApp (829-725-4450)
+              </a>
+
+              <!-- Botón Llamar -->
+              <a href="tel:8297254450" class="btn" style="background: #0A2540; color: #FFFFFF; font-weight: 700; font-size: 13.5px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; padding: 11px; border-radius: 10px;">
+                📞 Llamar a PUJOLS Servicios (829-725-4450)
               </a>
             </div>
           </div>

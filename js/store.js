@@ -85,16 +85,16 @@ const DEMO_DATA = {
     subtitulo: "AIRE Y REFRIGERACIÓN",
     especialidad: "Instalación • Reparación • Mantenimiento",
     rnc: "1-32-45678-9",
-    telefono: "809-555-0100",
-    whatsapp: "809-555-0100",
-    correo: "contacto@pujolsservicios.com",
+    telefono: "829-725-4450",
+    whatsapp: "829-725-4450",
+    correo: "pujolsservicios@gmail.com",
     direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
     moneda: "RD$",
     googleDriveSync: true,
     googleSheetsSync: true,
     ultimaSincronizacion: "14 oct 2025 - 10:24 a. m.",
-    gmail: "",
-    whatsappNumero: "",
+    gmail: "pujolsservicios@gmail.com",
+    whatsappNumero: "8297254450",
     sheetsUrl: "",
     driveUrl: ""
   },
@@ -764,8 +764,8 @@ const INITIAL_STATE = {
     subtitulo: "AIRE Y REFRIGERACIÓN",
     especialidad: "Instalación • Reparación • Mantenimiento",
     rnc: "1-32-45678-9",
-    telefono: "809-555-0100",
-    whatsapp: "809-555-0100",
+    telefono: "829-725-4450",
+    whatsapp: "829-725-4450",
     correo: "pujolsservicios@gmail.com",
     direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
     moneda: "RD$",
@@ -773,7 +773,7 @@ const INITIAL_STATE = {
     googleSheetsSync: true,
     ultimaSincronizacion: "Pendiente",
     gmail: "pujolsservicios@gmail.com",
-    whatsappNumero: "809-555-0100",
+    whatsappNumero: "8297254450",
     sheetsUrl: "",
     driveUrl: ""
   },
@@ -823,7 +823,19 @@ class Store {
 
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (parsed.empresa) {
+          if (!parsed.empresa.telefono || parsed.empresa.telefono.includes('809-555')) {
+            parsed.empresa.telefono = '829-725-4450';
+          }
+          if (!parsed.empresa.whatsapp || parsed.empresa.whatsapp.includes('809-555')) {
+            parsed.empresa.whatsapp = '829-725-4450';
+          }
+          if (!parsed.empresa.whatsappNumero || parsed.empresa.whatsappNumero.includes('809555') || parsed.empresa.whatsappNumero.includes('809-555')) {
+            parsed.empresa.whatsappNumero = '8297254450';
+          }
+        }
+        return parsed;
       }
     } catch (e) {
       console.warn('Error reading from localStorage, using initial state:', e);
