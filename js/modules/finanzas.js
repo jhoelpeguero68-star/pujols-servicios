@@ -109,9 +109,13 @@ const FinanzasModule = {
         </div>
 
         <div class="list-container">
-          ${txFiltered.map(tx => `
-            <div style="padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; background: #FFFFFF;">
-              <div style="display: flex; align-items: center; gap: 12px;">
+          ${txFiltered.length === 0 ? `
+            <div style="text-align: center; padding: 32px 16px; color: var(--text-muted); font-size: 13.5px;">
+              No hay movimientos registrados en este filtro.
+            </div>
+          ` : txFiltered.map(tx => `
+            <div style="padding: 12px 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; background: #FFFFFF; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 12px; min-width: 220px;">
                 <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: ${tx.tipo === 'Ingreso' ? '#ECFDF5' : '#FEF2F2'}; color: ${tx.tipo === 'Ingreso' ? '#10B981' : '#EF4444'}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                   <span class="icon" style="width: 18px; height: 18px;">
                     ${tx.tipo === 'Ingreso'
@@ -126,13 +130,23 @@ const FinanzasModule = {
                   </div>
                 </div>
               </div>
-              <div style="text-align: right;">
-                <div style="font-size: 15px; font-weight: 800; color: ${tx.tipo === 'Ingreso' ? 'var(--color-success)' : 'var(--color-danger)'};">
-                  ${tx.tipo === 'Ingreso' ? '+' : '-'} RD$ ${Number(tx.monto).toLocaleString('en-US')}
+              <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+                <div style="text-align: right;">
+                  <div style="font-size: 15px; font-weight: 800; color: ${tx.tipo === 'Ingreso' ? 'var(--color-success)' : 'var(--color-danger)'};">
+                    ${tx.tipo === 'Ingreso' ? '+' : '-'} RD$ ${Number(tx.monto).toLocaleString('en-US')}
+                  </div>
+                  <span class="badge ${tx.tipo === 'Ingreso' ? 'badge-completado' : 'badge-cancelado'}" style="font-size: 10px; padding: 2px 6px;">
+                    ${tx.tipo}
+                  </span>
                 </div>
-                <span class="badge ${tx.tipo === 'Ingreso' ? 'badge-completado' : 'badge-cancelado'}" style="font-size: 10px; padding: 2px 6px;">
-                  ${tx.tipo}
-                </span>
+                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                  <button type="button" class="btn-action-edit" title="Modificar movimiento" onclick="FinanzasModule.abrirEditarTransaccion('${tx.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: var(--color-primary); width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+                    <span class="icon" style="width: 15px; height: 15px;"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></span>
+                  </button>
+                  <button type="button" class="btn-action-delete" title="Eliminar movimiento" onclick="FinanzasModule.confirmarEliminar('${tx.id}')" style="background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+                    <span class="icon" style="width: 15px; height: 15px;"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></span>
+                  </button>
+                </div>
               </div>
             </div>
           `).join('')}
@@ -202,6 +216,138 @@ const FinanzasModule = {
     this.currentTab = tab;
     const container = document.getElementById('view-finanzas');
     if (container) this.render(container);
+  },
+
+  abrirEditarTransaccion(id) {
+    const fin = window.store.getFinanzas();
+    const tx = (fin.transacciones || []).find(t => t.id === id);
+    if (!tx) {
+      alert('No se encontró el movimiento seleccionado.');
+      return;
+    }
+
+    const modalId = 'modalEditarTransaccion';
+    let modalEl = document.getElementById(modalId);
+    if (!modalEl) {
+      modalEl = document.createElement('div');
+      modalEl.id = modalId;
+      modalEl.className = 'modal-backdrop';
+      document.body.appendChild(modalEl);
+    }
+
+    modalEl.innerHTML = `
+      <div class="modal-content" style="max-width: 480px;">
+        <div class="modal-header">
+          <h3 class="modal-title">Modificar Movimiento Financiero</h3>
+          <button class="modal-close-btn" onclick="App.closeModal('${modalId}')">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+          </button>
+        </div>
+        <form onsubmit="FinanzasModule.guardarEdicion(event, '${tx.id}')">
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Tipo de Movimiento:</label>
+                <select id="editTxTipo" class="form-select">
+                  <option value="Ingreso" ${tx.tipo === 'Ingreso' ? 'selected' : ''}>Ingreso (+)</option>
+                  <option value="Egreso" ${tx.tipo === 'Egreso' ? 'selected' : ''}>Egreso (-)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Monto (RD$):</label>
+                <input type="number" id="editTxMonto" class="form-input" value="${tx.monto}" min="1" step="any" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Concepto:</label>
+              <input type="text" id="editTxConcepto" class="form-input" value="${tx.concepto ? tx.concepto.replace(/"/g, '&quot;') : ''}" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Categoría:</label>
+                <select id="editTxCategoria" class="form-select">
+                  <option value="Servicios A/C" ${tx.categoria === 'Servicios A/C' ? 'selected' : ''}>Servicios A/C</option>
+                  <option value="Refrigeración" ${tx.categoria === 'Refrigeración' ? 'selected' : ''}>Refrigeración</option>
+                  <option value="Servicios" ${tx.categoria === 'Servicios' ? 'selected' : ''}>Servicios</option>
+                  <option value="Materiales y Repuestos" ${tx.categoria === 'Materiales y Repuestos' ? 'selected' : ''}>Materiales y Repuestos</option>
+                  <option value="Combustible y Transporte" ${tx.categoria === 'Combustible y Transporte' ? 'selected' : ''}>Combustible y Transporte</option>
+                  <option value="Herramientas" ${tx.categoria === 'Herramientas' ? 'selected' : ''}>Herramientas</option>
+                  <option value="Operaciones" ${tx.categoria === 'Operaciones' ? 'selected' : ''}>Operaciones</option>
+                  <option value="Otros" ${tx.categoria === 'Otros' ? 'selected' : ''}>Otros</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fecha:</label>
+                <input type="date" id="editTxFecha" class="form-input" value="${tx.fecha || (window.DateUtil ? window.DateUtil.getLocalDateString() : '')}">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('${modalId}')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    App.openModal(modalId);
+  },
+
+  guardarEdicion(event, txId) {
+    event.preventDefault();
+    const tipo = document.getElementById('editTxTipo').value;
+    const monto = Number(document.getElementById('editTxMonto').value) || 0;
+    const concepto = document.getElementById('editTxConcepto').value.trim();
+    const categoria = document.getElementById('editTxCategoria').value;
+    const fecha = document.getElementById('editTxFecha').value;
+
+    if (!concepto || monto <= 0) {
+      alert('Por favor ingrese un concepto y un monto válido mayor a 0.');
+      return;
+    }
+
+    const exito = window.store.updateTransaccion(txId, {
+      tipo,
+      monto,
+      concepto,
+      categoria,
+      fecha
+    });
+
+    if (exito) {
+      App.closeModal('modalEditarTransaccion');
+      const container = document.getElementById('view-finanzas');
+      if (container) this.render(container);
+      if (window.App && window.App.refreshCurrentScreen && window.App.currentScreen !== 'finanzas') {
+        window.App.refreshCurrentScreen();
+      }
+      alert('✅ Movimiento modificado exitosamente. Los balances han sido recalculados.');
+    } else {
+      alert('No se pudo actualizar el movimiento.');
+    }
+  },
+
+  confirmarEliminar(txId) {
+    const fin = window.store.getFinanzas();
+    const tx = (fin.transacciones || []).find(t => t.id === txId);
+    if (!tx) return;
+
+    const montoFmt = Number(tx.monto).toLocaleString('en-US');
+    if (confirm(`¿Estás seguro de eliminar este movimiento?\n\n"${tx.concepto}"\nMonto: RD$ ${montoFmt} (${tx.tipo})\n\nEl balance de ingresos, egresos y Google Sheets se actualizarán de inmediato.`)) {
+      const exito = window.store.deleteTransaccion(txId);
+      if (exito) {
+        const container = document.getElementById('view-finanzas');
+        if (container) this.render(container);
+        if (window.App && window.App.refreshCurrentScreen && window.App.currentScreen !== 'finanzas') {
+          window.App.refreshCurrentScreen();
+        }
+        alert('🗑️ Movimiento eliminado correctamente. Los balances se han recalculado.');
+      } else {
+        alert('No se pudo eliminar el movimiento.');
+      }
+    }
   }
 };
 

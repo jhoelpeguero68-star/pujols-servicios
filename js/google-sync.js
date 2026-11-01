@@ -400,6 +400,41 @@ const GoogleSync = {
     }
   },
 
+  // Sincronizar todas las transacciones (ingresos y egresos) con Google Sheets
+  async sincronizarTransacciones() {
+    await this.asegurarTokenValido();
+    if (!this.accessToken || !this.spreadsheetId) return;
+
+    try {
+      // 1. Limpiar rango Finanzas!A2:F1000 para que refleje fielmente altas, bajas o modificaciones
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A2:F1000:clear`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' }
+      });
+
+      const txs = (window.store && window.store.state && window.store.state.finanzas && window.store.state.finanzas.transacciones) || [];
+      if (txs.length > 0) {
+        const txRows = txs.map(t => [
+          t.id || `TX-${Date.now()}`,
+          t.tipo || 'Ingreso',
+          t.fecha || (window.DateUtil ? window.DateUtil.getLocalDateString() : new Date().toISOString().split('T')[0]),
+          t.concepto || 'Movimiento',
+          t.categoria || 'General',
+          t.monto || 0
+        ]);
+
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A2:F?valueInputOption=USER_ENTERED`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values: txRows })
+        });
+      }
+      console.log('Transacciones de finanzas sincronizadas con Google Sheets exitosamente.');
+    } catch (e) {
+      console.warn('Error al sincronizar transacciones con Sheets:', e);
+    }
+  },
+
   // Subir todos los datos actuales a la hoja de cálculo
   async subirTodosLosDatosASheet() {
     await this.asegurarTokenValido();
@@ -612,18 +647,27 @@ const GoogleSync = {
             categoria: r[4] || 'General',
             monto: Number(r[5]) || 0
           }));
+        } else {
+          window.store.state.finanzas.transacciones = [];
         }
       }
 
-      // 5. Calcular finanzas reales a partir de las facturas sincronizadas
-      const totalIngresos = window.store.state.facturas
-        .filter(f => f.estado === 'Pagada')
-        .reduce((sum, f) => sum + (Number(f.total) || 0), 0);
-
-      window.store.state.finanzas.ingresos = totalIngresos;
-      window.store.state.indicadores.ingresosMes = totalIngresos;
-      window.store.state.finanzas.resultadoNeto = totalIngresos - (window.store.state.finanzas.egresos || 0);
-      window.store.state.indicadores.resultadoNeto = window.store.state.finanzas.resultadoNeto;
+      // 5. Recalcular balances reales
+      if (window.store && window.store.recalcularFinanzas) {
+        window.store.recalcularFinanzas();
+      } else {
+        const txs = window.store.state.finanzas.transacciones || [];
+        const totalIngresos = txs.filter(t => t.tipo === 'Ingreso').reduce((sum, t) => sum + (Number(t.monto) || 0), 0);
+        const totalEgresos = txs.filter(t => t.tipo === 'Egreso').reduce((sum, t) => sum + (Number(t.monto) || 0), 0);
+        window.store.state.finanzas.ingresos = totalIngresos;
+        window.store.state.finanzas.egresos = totalEgresos;
+        window.store.state.finanzas.resultadoNeto = totalIngresos - totalEgresos;
+        if (window.store.state.indicadores) {
+          window.store.state.indicadores.ingresosMes = totalIngresos;
+          window.store.state.indicadores.egresosMes = totalEgresos;
+          window.store.state.indicadores.resultadoNeto = totalIngresos - totalEgresos;
+        }
+      }
 
       // Asegurar que no queden residuos demo
       window.store.state.datosLimpiados = true;

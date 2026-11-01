@@ -1117,12 +1117,17 @@ class Store {
         categoria: 'Servicios',
         monto: montoPagado
       });
+
+      this.recalcularFinanzas();
     }
 
     this.saveState();
 
-    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevaFactura) {
-      window.GoogleSync.sincronizarNuevaFactura(newFactura);
+    if (navigator.onLine && window.GoogleSync) {
+      if (window.GoogleSync.sincronizarNuevaFactura) window.GoogleSync.sincronizarNuevaFactura(newFactura);
+      if (newFactura.estado === 'Pagada' && window.GoogleSync.sincronizarTransacciones) {
+        window.GoogleSync.sincronizarTransacciones();
+      }
     }
 
     return newFactura;
@@ -1182,10 +1187,12 @@ class Store {
       }
     }
 
+    this.recalcularFinanzas();
     this.saveState();
 
-    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevaFactura) {
-      window.GoogleSync.sincronizarNuevaFactura(fac);
+    if (navigator.onLine && window.GoogleSync) {
+      if (window.GoogleSync.sincronizarNuevaFactura) window.GoogleSync.sincronizarNuevaFactura(fac);
+      if (window.GoogleSync.sincronizarTransacciones) window.GoogleSync.sincronizarTransacciones();
     }
 
     return true;
@@ -1196,37 +1203,99 @@ class Store {
     return this.state.finanzas;
   }
 
+  recalcularFinanzas() {
+    if (!this.state.finanzas) {
+      this.state.finanzas = { ingresos: 0, egresos: 0, resultadoNeto: 0, transacciones: [], resumenMensual: [] };
+    }
+    if (!Array.isArray(this.state.finanzas.transacciones)) {
+      this.state.finanzas.transacciones = [];
+    }
+
+    const txs = this.state.finanzas.transacciones;
+    const totalIngresos = txs
+      .filter(t => t.tipo === 'Ingreso')
+      .reduce((sum, t) => sum + (Number(t.monto) || 0), 0);
+    const totalEgresos = txs
+      .filter(t => t.tipo === 'Egreso')
+      .reduce((sum, t) => sum + (Number(t.monto) || 0), 0);
+
+    this.state.finanzas.ingresos = totalIngresos;
+    this.state.finanzas.egresos = totalEgresos;
+    this.state.finanzas.resultadoNeto = totalIngresos - totalEgresos;
+
+    if (!this.state.indicadores) {
+      this.state.indicadores = { ingresosMes: 0, egresosMes: 0, resultadoNeto: 0, serviciosMes: 0, clientesTotal: 0 };
+    }
+    this.state.indicadores.ingresosMes = totalIngresos;
+    this.state.indicadores.egresosMes = totalEgresos;
+    this.state.indicadores.resultadoNeto = this.state.finanzas.resultadoNeto;
+  }
+
   addTransaccion(txData) {
+    if (!this.state.finanzas) {
+      this.state.finanzas = { ingresos: 0, egresos: 0, resultadoNeto: 0, transacciones: [], resumenMensual: [] };
+    }
+    if (!Array.isArray(this.state.finanzas.transacciones)) {
+      this.state.finanzas.transacciones = [];
+    }
+
     const monto = Number(txData.monto) || 0;
     const newTx = {
-      id: `TX-${Date.now()}`,
-      tipo: txData.tipo, // 'Ingreso' or 'Egreso'
-      fecha: DateUtil.getLocalDateString(),
+      id: txData.id || `TX-${Date.now()}`,
+      tipo: txData.tipo || 'Ingreso', // 'Ingreso' or 'Egreso'
+      fecha: txData.fecha || DateUtil.getLocalDateString(),
       concepto: txData.concepto,
       categoria: txData.categoria || 'Operaciones',
       monto: monto
     };
 
     this.state.finanzas.transacciones.unshift(newTx);
-
-    if (txData.tipo === 'Ingreso') {
-      this.state.finanzas.ingresos += monto;
-      this.state.finanzas.resultadoNeto += monto;
-    } else {
-      this.state.finanzas.egresos += monto;
-      this.state.finanzas.resultadoNeto -= monto;
-    }
-
-    // Update October summary
-    const oct = this.state.finanzas.resumenMensual.find(m => m.mes === 'Oct');
-    if (oct) {
-      if (txData.tipo === 'Ingreso') oct.ingresos += monto;
-      else oct.egresos += monto;
-      oct.resultado = oct.ingresos - oct.egresos;
-    }
-
+    this.recalcularFinanzas();
     this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarTransacciones) {
+      window.GoogleSync.sincronizarTransacciones();
+    }
+
     return newTx;
+  }
+
+  updateTransaccion(txId, updatedData) {
+    if (!this.state.finanzas || !Array.isArray(this.state.finanzas.transacciones)) return false;
+    const index = this.state.finanzas.transacciones.findIndex(t => t.id === txId);
+    if (index === -1) return false;
+
+    const tx = this.state.finanzas.transacciones[index];
+    if (updatedData.tipo) tx.tipo = updatedData.tipo;
+    if (updatedData.concepto) tx.concepto = updatedData.concepto;
+    if (updatedData.categoria) tx.categoria = updatedData.categoria;
+    if (updatedData.monto !== undefined) tx.monto = Number(updatedData.monto) || 0;
+    if (updatedData.fecha) tx.fecha = updatedData.fecha;
+
+    this.recalcularFinanzas();
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarTransacciones) {
+      window.GoogleSync.sincronizarTransacciones();
+    }
+
+    return true;
+  }
+
+  deleteTransaccion(txId) {
+    if (!this.state.finanzas || !Array.isArray(this.state.finanzas.transacciones)) return false;
+    const index = this.state.finanzas.transacciones.findIndex(t => t.id === txId);
+    if (index === -1) return false;
+
+    this.state.finanzas.transacciones.splice(index, 1);
+    this.recalcularFinanzas();
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarTransacciones) {
+      window.GoogleSync.sincronizarTransacciones();
+    }
+
+    return true;
   }
 
   // --- RECORDATORIOS METHODS ---
