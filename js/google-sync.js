@@ -331,7 +331,7 @@ const GoogleSync = {
         c.lat || '',
         c.lng || '',
         c.mapUrl || '',
-        new Date().toLocaleDateString('es-DO')
+        c.fechaRegistro ? (window.DateUtil ? window.DateUtil.formatDateSafe(c.fechaRegistro) : c.fechaRegistro) : (window.DateUtil ? window.DateUtil.getLocalDateString() : new Date().toLocaleDateString('es-DO'))
       ];
 
       // Verificar si ya existe en la columna A
@@ -654,6 +654,7 @@ const GoogleSync = {
               lat: r[7] ? Number(r[7]) : null,
               lng: r[8] ? Number(r[8]) : null,
               mapUrl: r[9] || (r[6] ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r[6])}` : ''),
+              fechaRegistro: r[10] || (window.DateUtil ? window.DateUtil.getLocalDateString() : new Date().toLocaleDateString('es-DO')),
               equiposCount: 1,
               avatarBg: '#0A2540'
             }));

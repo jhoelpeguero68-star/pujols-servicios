@@ -72,6 +72,31 @@ const DateUtil = {
     } catch (e) {
       return 'Noviembre 2026';
     }
+  },
+
+  // Calcular fecha sumando meses a partir de hoy o fecha base en formato YYYY-MM-DD
+  calcularFechaMeses(meses = 3, fechaBase = new Date()) {
+    try {
+      const d = (typeof fechaBase === 'string') ? new Date(fechaBase + 'T12:00:00') : new Date(fechaBase);
+      d.setMonth(d.getMonth() + meses);
+      return this.getISODate(d);
+    } catch (e) {
+      return this.getISODate();
+    }
+  },
+
+  // Formatear cualquier fecha (YYYY-MM-DD, DD/MM/YYYY, o Date) a texto dominicano legible
+  formatDateSafe(fechaStr) {
+    if (!fechaStr) return this.getFormatDateText();
+    if (fechaStr instanceof Date) return this.getFormatDateText(fechaStr);
+    try {
+      if (typeof fechaStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+        return this.getFormatDateText(new Date(fechaStr + 'T12:00:00'));
+      }
+      return fechaStr;
+    } catch (e) {
+      return fechaStr;
+    }
   }
 };
 window.DateUtil = DateUtil;
@@ -850,6 +875,21 @@ class Store {
             equipoDestacado: null,
             otrosRecordatorios: []
           };
+        } else if (parsed.recordatorios.equipoDestacado && Array.isArray(parsed.recordatorios.equipoDestacado.timeline)) {
+          parsed.recordatorios.equipoDestacado.timeline.forEach(t => {
+            if (t.fecha === '15 dic 2026' || t.fecha === '2026-12-15') {
+              t.fecha = DateUtil.formatDateSafe(DateUtil.calcularFechaMeses(3));
+            }
+          });
+        }
+
+        // Limpiar equipos con fecha estática '2026-12-15'
+        if (Array.isArray(parsed.equipos)) {
+          parsed.equipos.forEach(eq => {
+            if (eq.proximoMantenimiento === '2026-12-15') {
+              eq.proximoMantenimiento = DateUtil.calcularFechaMeses(3);
+            }
+          });
         }
         return parsed;
       }
@@ -959,7 +999,7 @@ class Store {
       correo: clienteData.correo || '',
       tipo: clienteData.tipo || 'Residencial',
       equiposCount: 0,
-      fechaRegistro: DateUtil.getISODate(),
+      fechaRegistro: clienteData.fechaRegistro || DateUtil.getISODate(),
       colorBadge: randomColor,
       pendienteSincronizacion: !navigator.onLine
     };
@@ -1012,7 +1052,7 @@ class Store {
       ubicacion: equipoData.ubicacion || 'General',
       fechaInstalacion: equipoData.fechaInstalacion || DateUtil.getISODate(),
       ultimoMantenimiento: DateUtil.getISODate(),
-      proximoMantenimiento: equipoData.proximoMantenimiento || '2026-12-15',
+      proximoMantenimiento: equipoData.proximoMantenimiento || DateUtil.calcularFechaMeses(3, equipoData.fechaInstalacion || new Date()),
       estado: 'Operativo',
       icono: icono
     };
@@ -1349,7 +1389,7 @@ class Store {
       if (equipos.length > 0) {
         const eq = equipos[0];
         const cl = clientes.find(c => c.id === eq.clienteId) || { nombre: eq.clienteNombre || 'Cliente', telefono: '829-725-4450' };
-        const proxFecha = eq.proximoMantenimiento || (window.DateUtil ? window.DateUtil.getFormatDateText() : 'Próximamente');
+        const proxFecha = window.DateUtil ? window.DateUtil.formatDateSafe(eq.proximoMantenimiento || window.DateUtil.calcularFechaMeses(3)) : 'En 3 meses';
         this.state.recordatorios.equipoDestacado = {
           id: eq.id,
           titulo: `${eq.tipo} - ${cl.nombre}`,
@@ -1421,7 +1461,7 @@ class Store {
       cliente: recData.cliente || 'Cliente',
       equipo: recData.equipo || 'Equipo Climatización',
       fechaVencimiento: recData.fechaVencimiento || (window.DateUtil ? window.DateUtil.getFormatDateText() : 'Próximamente'),
-      fechaISO: recData.fechaISO || (window.DateUtil ? window.DateUtil.getLocalDateString() : new Date().toISOString().split('T')[0]),
+      fechaISO: recData.fechaISO || (window.DateUtil ? window.DateUtil.getISODate() : new Date().toISOString().split('T')[0]),
       estado: recData.estado || 'Programado',
       telefono: recData.telefono || '829-725-4450',
       mensaje: recData.mensaje || `Estimado/a ${recData.cliente}, le saludamos de PUJOLS Servicios para recordarle su fecha de mantenimiento preventivo para su ${recData.equipo || 'equipo'}. ¿Desea coordinar la visita técnica?`

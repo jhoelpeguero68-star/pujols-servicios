@@ -183,7 +183,7 @@ const RecordatoriosModule = {
     }
 
     const clientes = window.store.getClientes ? window.store.getClientes() : [];
-    const hoyISO = window.DateUtil ? window.DateUtil.getLocalDateString() : new Date().toISOString().split('T')[0];
+    const hoyISO = window.DateUtil ? window.DateUtil.getISODate() : new Date().toISOString().split('T')[0];
 
     modalEl.innerHTML = `
       <div class="modal-content" style="max-width: 520px;">
@@ -338,7 +338,7 @@ const RecordatoriosModule = {
       document.body.appendChild(modalEl);
     }
 
-    const fechaISO = item.fechaISO || (window.DateUtil ? window.DateUtil.getLocalDateString() : '');
+    const fechaISO = item.fechaISO || (window.DateUtil ? window.DateUtil.getISODate() : '');
 
     modalEl.innerHTML = `
       <div class="modal-content" style="max-width: 520px;">

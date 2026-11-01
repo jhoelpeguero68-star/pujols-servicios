@@ -124,7 +124,7 @@ const EquiposModule = {
                     </div>
                     <div class="equipment-detail-row">
                       <span>Próx. Mantenimiento:</span>
-                      <strong style="color: var(--color-secondary-blue);">${eq.proximoMantenimiento}</strong>
+                      <strong style="color: var(--color-secondary-blue);">${window.DateUtil ? window.DateUtil.formatDateSafe(eq.proximoMantenimiento) : eq.proximoMantenimiento}</strong>
                     </div>
                   </div>
                 </div>

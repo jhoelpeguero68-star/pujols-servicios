@@ -490,6 +490,14 @@
             <input type="text" id="clienteDireccion" class="form-input" placeholder="Ej: Bella Vista, Santo Domingo, RD" required>
           </div>
 
+          <div class="form-group">
+            <label class="form-label">Fecha de Registro:</label>
+            <input type="date" id="clienteFechaRegistro" class="form-input">
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">
+              Fecha oficial de alta del cliente en Santo Domingo (automática a la fecha actual).
+            </div>
+          </div>
+
           <!-- Geolocalización GPS del Cliente -->
           <div class="form-group" style="background: #F8FAFC; border: 1px dashed var(--border-color); border-radius: var(--radius-md); padding: 12px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
@@ -644,7 +652,15 @@
             </div>
             <div class="form-group">
               <label class="form-label">Fecha de Instalación:</label>
-              <input type="date" id="equipoFechaInstalacion" class="form-input" value="2024-03-15">
+              <input type="date" id="equipoFechaInstalacion" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Próximo Mantenimiento Sugerido:</label>
+            <input type="date" id="equipoProximoMantenimiento" class="form-input">
+            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px;">
+              Fecha estimada para la próxima visita técnica periódica (3 meses recomendados).
             </div>
           </div>
         </div>
@@ -753,17 +769,17 @@
   <div id="loginOverlay" class="login-overlay" style="display: none;"></div>
 
   <!-- Scripts de la Aplicación -->
-  <script src="js/store.js?v=24"></script>
-  <script src="js/google-sync.js?v=24"></script>
-  <script src="js/modules/auth.js?v=24"></script>
-  <script src="js/modules/dashboard.js?v=24"></script>
-  <script src="js/modules/clientes.js?v=24"></script>
-  <script src="js/modules/equipos.js?v=24"></script>
-  <script src="js/modules/servicios.js?v=24"></script>
-  <script src="js/modules/facturacion.js?v=24"></script>
-  <script src="js/modules/finanzas.js?v=24"></script>
-  <script src="js/modules/recordatorios.js?v=24"></script>
-  <script src="js/modules/configuracion.js?v=24"></script>
-  <script src="js/app.js?v=24"></script>
+  <script src="js/store.js?v=25"></script>
+  <script src="js/google-sync.js?v=25"></script>
+  <script src="js/modules/auth.js?v=25"></script>
+  <script src="js/modules/dashboard.js?v=25"></script>
+  <script src="js/modules/clientes.js?v=25"></script>
+  <script src="js/modules/equipos.js?v=25"></script>
+  <script src="js/modules/servicios.js?v=25"></script>
+  <script src="js/modules/facturacion.js?v=25"></script>
+  <script src="js/modules/finanzas.js?v=25"></script>
+  <script src="js/modules/recordatorios.js?v=25"></script>
+  <script src="js/modules/configuracion.js?v=25"></script>
+  <script src="js/app.js?v=25"></script>
 </body>
 </html>

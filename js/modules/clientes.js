@@ -88,6 +88,9 @@ const ClientesModule = {
                     </span>
                     ${c.direccion}
                   </span>
+                  <span>
+                    📅 ${window.DateUtil ? window.DateUtil.formatDateSafe(c.fechaRegistro) : (c.fechaRegistro || 'Reciente')}
+                  </span>
                   <span style="color: var(--color-primary); font-weight: 600;">
                     ${c.equiposCount || 0} equipo${c.equiposCount === 1 ? '' : 's'}
                   </span>
@@ -171,6 +174,7 @@ const ClientesModule = {
               <h4 style="font-size: 17px; color: var(--color-primary);">${cliente.nombre}</h4>
               <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
                 ${cliente.tipo} &nbsp;•&nbsp; 📍 ${cliente.direccion}
+                &nbsp;•&nbsp; 📅 Registrado: <strong>${window.DateUtil ? window.DateUtil.formatDateSafe(cliente.fechaRegistro) : (cliente.fechaRegistro || 'Reciente')}</strong>
                 ${cliente.lat && cliente.lng ? ` &nbsp;•&nbsp; <span style="color: #0284C7; font-weight: 600; font-size: 11.5px;">GPS: ${cliente.lat.toFixed(4)}, ${cliente.lng.toFixed(4)}</span>` : ''}
               </p>
             </div>

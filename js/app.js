@@ -695,6 +695,11 @@ const App = {
     const lngInput = document.getElementById('clienteLng');
     if (latInput) latInput.value = '';
     if (lngInput) lngInput.value = '';
+
+    const fechaRegInput = document.getElementById('clienteFechaRegistro');
+    if (fechaRegInput) {
+      fechaRegInput.value = window.DateUtil ? window.DateUtil.getISODate() : new Date().toISOString().split('T')[0];
+    }
   },
 
   capturarGpsCliente() {
@@ -743,6 +748,7 @@ const App = {
     const correo = document.getElementById('clienteCorreo').value;
     const lat = document.getElementById('clienteLat').value ? Number(document.getElementById('clienteLat').value) : null;
     const lng = document.getElementById('clienteLng').value ? Number(document.getElementById('clienteLng').value) : null;
+    const fechaRegistro = document.getElementById('clienteFechaRegistro') ? document.getElementById('clienteFechaRegistro').value : null;
 
     if (!nombre) {
       alert('Por favor ingrese el nombre del cliente.');
@@ -757,7 +763,8 @@ const App = {
       direccion,
       lat,
       lng,
-      correo
+      correo,
+      fechaRegistro: fechaRegistro || (window.DateUtil ? window.DateUtil.getISODate() : null)
     });
 
     this.closeModal('modalNuevoCliente');
@@ -779,6 +786,14 @@ const App = {
         `).join('')}
       `;
     }
+    const fechaInstInput = document.getElementById('equipoFechaInstalacion');
+    if (fechaInstInput) {
+      fechaInstInput.value = window.DateUtil ? window.DateUtil.getISODate() : new Date().toISOString().split('T')[0];
+    }
+    const proxMantInput = document.getElementById('equipoProximoMantenimiento');
+    if (proxMantInput) {
+      proxMantInput.value = window.DateUtil ? window.DateUtil.calcularFechaMeses(3) : '';
+    }
   },
 
   submitNuevoEquipo(event) {
@@ -791,6 +806,7 @@ const App = {
     const capacidad = document.getElementById('equipoCapacidad').value;
     const ubicacion = document.getElementById('equipoUbicacion').value;
     const fechaInstalacion = document.getElementById('equipoFechaInstalacion').value;
+    const proximoMantenimiento = document.getElementById('equipoProximoMantenimiento') ? document.getElementById('equipoProximoMantenimiento').value : '';
 
     if (!clienteId) {
       alert('Por favor seleccione un cliente.');
@@ -805,7 +821,8 @@ const App = {
       modelo,
       capacidad,
       ubicacion,
-      fechaInstalacion
+      fechaInstalacion,
+      proximoMantenimiento: proximoMantenimiento || (window.DateUtil ? window.DateUtil.calcularFechaMeses(3, fechaInstalacion) : '')
     });
 
     this.closeModal('modalNuevoEquipo');
