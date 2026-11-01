@@ -710,10 +710,12 @@ class Store {
 
   resetToDefaults() {
     this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
+    this.state.datosLimpiados = false;
     this.saveState();
   }
 
   limpiarDatosFicticios() {
+    this.state.datosLimpiados = true;
     this.state.clientes = [];
     this.state.equipos = [];
     this.state.servicios = [];
@@ -1112,6 +1114,70 @@ class Store {
 
   // --- DASHBOARD FILTERED ANALYTICS ---
   getFilteredDashboardStats(mes = 'Oct', tipoServicio = 'todos', tipoEquipo = 'todos') {
+    // Si los datos demo fueron limpiados o la app está operando con datos reales de producción
+    if (this.state.datosLimpiados || (this.state.clientes.length === 0 && this.state.servicios.length === 0)) {
+      const servicios = this.state.servicios || [];
+      const facturas = this.state.facturas || [];
+
+      let filteredSrv = servicios.filter(s => {
+        if (tipoServicio !== 'todos' && s.tipo !== tipoServicio) return false;
+        if (tipoEquipo !== 'todos' && !(s.equipoNombre || '').toLowerCase().includes(tipoEquipo.toLowerCase())) return false;
+        return true;
+      });
+
+      const totalServicios = filteredSrv.length;
+      let totalIngresos = facturas
+        .filter(f => f.estado === 'Pagada')
+        .reduce((sum, f) => sum + (Number(f.total) || 0), 0);
+
+      const ticketPromedio = totalServicios > 0 ? Math.round(totalIngresos / totalServicios) : (totalIngresos > 0 ? totalIngresos : 0);
+
+      const eqAire = filteredSrv.filter(s => (s.equipoNombre || '').toLowerCase().includes('aire')).length;
+      const eqNev = filteredSrv.filter(s => (s.equipoNombre || '').toLowerCase().includes('nevera')).length;
+      const eqLav = filteredSrv.filter(s => (s.equipoNombre || '').toLowerCase().includes('lavadora')).length;
+
+      const srvMant = filteredSrv.filter(s => (s.tipo || '').toLowerCase().includes('mantenimiento')).length;
+      const srvRep = filteredSrv.filter(s => (s.tipo || '').toLowerCase().includes('reparación') || (s.tipo || '').toLowerCase().includes('reparacion')).length;
+      const srvInst = filteredSrv.filter(s => (s.tipo || '').toLowerCase().includes('instalación') || (s.tipo || '').toLowerCase().includes('instalacion')).length;
+
+      const pAire = totalServicios > 0 ? Math.round((eqAire / totalServicios) * 100) : 0;
+      const pNev = totalServicios > 0 ? Math.round((eqNev / totalServicios) * 100) : 0;
+      const pLav = totalServicios > 0 ? Math.round((eqLav / totalServicios) * 100) : 0;
+
+      const pMant = totalServicios > 0 ? Math.round((srvMant / totalServicios) * 100) : 0;
+      const pRep = totalServicios > 0 ? Math.round((srvRep / totalServicios) * 100) : 0;
+      const pInst = totalServicios > 0 ? Math.round((srvInst / totalServicios) * 100) : 0;
+
+      const semSrv = Math.round(totalServicios / 4);
+      const semIng = Math.round(totalIngresos / 4);
+
+      const series = [
+        { label: 'Sem 1', servicios: semSrv, ingresos: semIng },
+        { label: 'Sem 2', servicios: semSrv, ingresos: semIng },
+        { label: 'Sem 3', servicios: semSrv, ingresos: semIng },
+        { label: 'Sem 4', servicios: Math.max(0, totalServicios - (semSrv * 3)), ingresos: Math.max(0, totalIngresos - (semIng * 3)) }
+      ];
+
+      return {
+        isMultiMonth: false,
+        periodoNombre: 'Producción Real',
+        totalServicios,
+        totalIngresos,
+        ticketPromedio,
+        series,
+        distribucionEquipos: [
+          { nombre: 'Aire Acondicionado', porcentaje: pAire, count: eqAire, icon: '❄️' },
+          { nombre: 'Nevera', porcentaje: pNev, count: eqNev, icon: '🧊' },
+          { nombre: 'Lavadora', porcentaje: pLav, count: eqLav, icon: '🧺' }
+        ],
+        distribucionServicios: [
+          { nombre: 'Mantenimiento', porcentaje: pMant, count: srvMant },
+          { nombre: 'Reparación', porcentaje: pRep, count: srvRep },
+          { nombre: 'Instalación', porcentaje: pInst, count: srvInst }
+        ]
+      };
+    }
+
     const mesesData = {
       'Oct': {
         nombre: 'Octubre 2025',

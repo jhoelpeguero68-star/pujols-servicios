@@ -10,7 +10,7 @@ const DashboardModule = {
   render(container) {
     const state = window.store.state;
     const ind = state.indicadores;
-    const proximos = state.servicios.slice(4, 7);
+    const proximos = (state.servicios || []).slice(0, 5);
 
     // Obtener estadísticas filtradas según la selección del usuario
     const stats = window.store.getFilteredDashboardStats(this.activeMonth, this.activeService, this.activeEquipment);
@@ -256,7 +256,14 @@ const DashboardModule = {
         </div>
 
         <div class="list-container">
-          ${proximos.map(item => `
+          ${proximos.length === 0 ? `
+            <div style="text-align: center; padding: 32px 16px; background: #F8FAFC; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+              <span style="font-size: 30px; display: block; margin-bottom: 8px;">📅</span>
+              <div style="font-size: 14.5px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">No hay mantenimientos ni citas agendadas</div>
+              <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px;">Comienza registrando tu primera orden de servicio o cliente.</p>
+              <button class="btn btn-primary btn-sm" onclick="App.openModal('modalNuevaOrden')">+ Agendar Servicio</button>
+            </div>
+          ` : proximos.map(item => `
             <div class="service-item-card" onclick="App.navigate('servicios')" style="cursor: pointer;">
               <div style="display: flex; align-items: center; gap: 14px;">
                 <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: #E0F2FE; color: #0284C7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -267,7 +274,7 @@ const DashboardModule = {
                 <div>
                   <div style="font-size: 14.5px; font-weight: 700; color: var(--color-primary);">${item.titulo}</div>
                   <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                    📅 ${item.fechaFormato} &nbsp;•&nbsp; ⏰ ${item.hora} &nbsp;•&nbsp; 👤 ${item.clienteNombre}
+                    📅 ${item.fechaFormato || item.fecha} &nbsp;•&nbsp; ⏰ ${item.hora} &nbsp;•&nbsp; 👤 ${item.clienteNombre}
                   </div>
                 </div>
               </div>
@@ -282,13 +289,29 @@ const DashboardModule = {
   },
 
   renderChartSVG(stats) {
+    if (stats.totalServicios === 0 && stats.totalIngresos === 0) {
+      return `
+        <div style="text-align: center; padding: 42px 20px; background: #F8FAFC; border-radius: var(--radius-md); border: 1px dashed #CBD5E1;">
+          <div style="font-size: 34px; margin-bottom: 8px;">📊</div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">Gráfica en Espera de Datos Reales</div>
+          <p style="font-size: 13px; color: var(--text-muted); max-width: 480px; margin: 0 auto 16px auto;">
+            El sistema se encuentra limpio y en blanco para producción. A medida que crees órdenes y cobres facturas, esta gráfica reflejará tus métricas semanales y mensuales automáticamente.
+          </p>
+          <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-primary btn-sm" onclick="App.openModal('modalNuevaOrden')">+ Registrar Primer Servicio</button>
+            <button class="btn btn-outline btn-sm" onclick="App.openModal('modalNuevoCliente')">+ Registrar Primer Cliente</button>
+          </div>
+        </div>
+      `;
+    }
+
     const chartWidth = 620;
     const chartHeight = 210;
     const items = stats.series;
     
     // Calcular escala máxima de servicios y de ingresos
-    const maxServicios = Math.max(...items.map(i => i.servicios), 10);
-    const maxIngresos = Math.max(...items.map(i => i.ingresos), 30000);
+    const maxServicios = Math.max(...items.map(i => i.servicios), 5);
+    const maxIngresos = Math.max(...items.map(i => i.ingresos), 10000);
 
     const groupWidth = chartWidth / items.length;
     const barWidth = 26;

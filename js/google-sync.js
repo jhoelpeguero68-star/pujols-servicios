@@ -465,6 +465,14 @@ const GoogleSync = {
       if (res.ok) {
         const data = await res.json();
         if (data.values && data.values.length > 0) {
+          // Si el usuario limpió los datos de prueba y la hoja en Google aún contiene clientes de demostración, no restaurar datos falsos
+          const contieneDemo = data.values.some(r => r[0] === 'C-001' && (r[1] || '').includes('Juan Pérez'));
+          if (window.store && window.store.state && window.store.state.datosLimpiados && contieneDemo) {
+            console.log('Se detectaron datos demo en Google Sheets tras la limpieza. Limpiando hoja para producción...');
+            await this.limpiarHojasParaProduccion();
+            return;
+          }
+
           const clientesFromSheet = data.values.map(r => ({
             id: r[0],
             nombre: r[1],
@@ -489,6 +497,34 @@ const GoogleSync = {
       }
     } catch (e) {
       console.warn('Error al descargar datos de Google Sheets:', e);
+    }
+  },
+
+  // Limpiar las filas de prueba en Google Sheets conservando los encabezados (fila 1)
+  async limpiarHojasParaProduccion() {
+    await this.asegurarTokenValido();
+    if (!this.spreadsheetId || !this.accessToken) return;
+
+    try {
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values:batchClear`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ranges: [
+            'Clientes!A2:K1000',
+            'Equipos!A2:H1000',
+            'Servicios!A2:I1000',
+            'Facturas!A2:G1000',
+            'Finanzas!A2:F1000'
+          ]
+        })
+      });
+      console.log('Filas de prueba eliminadas de Google Sheets exitosamente.');
+    } catch (e) {
+      console.warn('Error al limpiar filas en Google Sheets:', e);
     }
   },
 

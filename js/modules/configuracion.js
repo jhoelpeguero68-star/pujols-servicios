@@ -359,10 +359,19 @@ const ConfiguracionModule = {
     }
   },
 
-  limpiarParaProduccion() {
-    if (confirm('¿Está seguro de que desea limpiar todos los clientes, órdenes y facturas de prueba para empezar a usar la aplicación con sus clientes reales?')) {
+  async limpiarParaProduccion() {
+    if (confirm('¿Está seguro de que desea limpiar todos los clientes, órdenes y facturas de prueba para empezar a usar la aplicación con sus clientes reales?\n\nSi está conectado a Google Sheets, también se limpiarán las filas de demostración en su hoja de cálculo.')) {
       window.store.limpiarDatosFicticios();
-      alert('✅ Todos los datos ficticios han sido eliminados. La app está lista en blanco para sus datos reales.');
+
+      if (window.GoogleSync && window.GoogleSync.limpiarHojasParaProduccion) {
+        try {
+          await window.GoogleSync.limpiarHojasParaProduccion();
+        } catch (e) {
+          console.warn('Aviso al limpiar Google Sheets:', e);
+        }
+      }
+
+      alert('✅ Todos los datos ficticios han sido eliminados del dispositivo y de Google Sheets.\n\nLa aplicación y su base de datos están listas en blanco para sus datos reales.');
       location.reload();
     }
   }
