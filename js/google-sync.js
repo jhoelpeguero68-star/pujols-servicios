@@ -25,8 +25,31 @@ const GoogleSync = {
         setTimeout(() => this.renovarTokenSilencioso(), 1500);
       } else {
         console.log('Sesión activa con Google:', this.userEmail);
+        // Descargar automáticamente datos más recientes de Sheets al abrir la app (en PC o celular)
+        if (this.spreadsheetId && this.accessToken) {
+          setTimeout(async () => {
+            await this.asegurarPestanasExistentes();
+            await this.descargarDatosDeSheet(false);
+          }, 1200);
+        }
       }
     }
+
+    // Auto-actualizar al enfocar la pestaña (ej: el usuario estaba usando el celular y pasa a la PC)
+    window.addEventListener('focus', () => {
+      if (this.accessToken && this.spreadsheetId && this.isTokenValid() && !this.isSyncing) {
+        console.log('Ventana enfocada: sincronizando datos desde Google Sheets...');
+        this.descargarDatosDeSheet(false);
+      }
+    });
+
+    // Auto-sincronización periódica cada 3 minutos en segundo plano si está online
+    setInterval(() => {
+      if (navigator.onLine && this.accessToken && this.spreadsheetId && this.isTokenValid() && !this.isSyncing) {
+        console.log('Sincronización periódica de fondo...');
+        this.descargarDatosDeSheet(false);
+      }
+    }, 180000);
   },
 
   isTokenValid() {
@@ -228,6 +251,66 @@ const GoogleSync = {
     }
   },
 
+  // Garantizar que existan todas las pestañas necesarias (Clientes, Equipos, Servicios, Facturas, Finanzas)
+  async asegurarPestanasExistentes() {
+    if (!this.spreadsheetId || !this.accessToken) return;
+
+    try {
+      const res = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}?fields=sheets.properties.title`,
+        { headers: { Authorization: `Bearer ${this.accessToken}` } }
+      );
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const existingTitles = (data.sheets || []).map(s => s.properties && s.properties.title);
+      const requiredSheets = ['Clientes', 'Equipos', 'Servicios', 'Facturas', 'Finanzas'];
+      const missingSheets = requiredSheets.filter(t => !existingTitles.includes(t));
+
+      if (missingSheets.length > 0) {
+        console.log('Creando pestañas faltantes en Google Sheets:', missingSheets);
+        const requests = missingSheets.map(title => ({
+          addSheet: { properties: { title } }
+        }));
+
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}:batchUpdate`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requests })
+        });
+
+        // Si faltaba Finanzas, crear su encabezado y sincronizar movimientos existentes
+        if (missingSheets.includes('Finanzas')) {
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A1:F1?valueInputOption=USER_ENTERED`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ values: [['ID', 'Tipo', 'Fecha', 'Concepto', 'Categoría', 'Monto (RD$)']] })
+          });
+
+          // Si hay movimientos en la app, subirlos a Sheets
+          const localTxs = window.store && window.store.state && window.store.state.finanzas && window.store.state.finanzas.transacciones;
+          if (Array.isArray(localTxs) && localTxs.length > 0) {
+            const txRows = localTxs.map(t => [
+              t.id || `TX-${Date.now()}`,
+              t.tipo || 'Ingreso',
+              t.fecha || (window.DateUtil ? window.DateUtil.getLocalDateString() : new Date().toISOString().split('T')[0]),
+              t.concepto || 'Movimiento',
+              t.categoria || 'General',
+              Number(t.monto) || 0
+            ]);
+            await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A2:F?valueInputOption=USER_ENTERED`, {
+              method: 'PUT',
+              headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ values: txRows })
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Aviso al verificar pestañas en Sheets:', e);
+    }
+  },
+
   // Sincronizar un nuevo cliente hacia Google Sheets (inserta o actualiza)
   async sincronizarNuevoCliente(c) {
     await this.asegurarTokenValido();
@@ -406,10 +489,14 @@ const GoogleSync = {
     if (!this.accessToken || !this.spreadsheetId) return;
 
     try {
-      // 1. Limpiar rango Finanzas!A2:F1000 para que refleje fielmente altas, bajas o modificaciones
-      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A2:F1000:clear`, {
+      // 1. Asegurar que la pestaña Finanzas exista
+      await this.asegurarPestanasExistentes();
+
+      // 2. Limpiar rango Finanzas!A2:F1000 con batchClear seguro para evitar filas fantasma
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values:batchClear`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' }
+        headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ranges: ['Finanzas!A2:F1000'] })
       });
 
       const txs = (window.store && window.store.state && window.store.state.finanzas && window.store.state.finanzas.transacciones) || [];
@@ -420,16 +507,23 @@ const GoogleSync = {
           t.fecha || (window.DateUtil ? window.DateUtil.getLocalDateString() : new Date().toISOString().split('T')[0]),
           t.concepto || 'Movimiento',
           t.categoria || 'General',
-          t.monto || 0
+          Number(t.monto) || 0
         ]);
 
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A2:F?valueInputOption=USER_ENTERED`, {
+        const putRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Finanzas!A2:F?valueInputOption=USER_ENTERED`, {
           method: 'PUT',
           headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ values: txRows })
         });
+
+        if (putRes.ok) {
+          console.log(`✅ ${txRows.length} movimientos de finanzas sincronizados con Google Sheets.`);
+        } else {
+          console.warn('Respuesta al subir finanzas:', await putRes.text());
+        }
+      } else {
+        console.log('Sin transacciones locales en Finanzas.');
       }
-      console.log('Transacciones de finanzas sincronizadas con Google Sheets exitosamente.');
     } catch (e) {
       console.warn('Error al sincronizar transacciones con Sheets:', e);
     }
@@ -525,11 +619,16 @@ const GoogleSync = {
   // Descargar todos los datos desde Google Sheets hacia la aplicación local
   async descargarDatosDeSheet(mostrarAlerta = false) {
     if (!this.spreadsheetId || !this.accessToken) return;
+    if (this.isSyncing) return;
+    this.isSyncing = true;
 
     try {
+      await this.asegurarPestanasExistentes();
+
       let clientesCount = 0;
       let serviciosCount = 0;
       let facturasCount = 0;
+      let finanzasCount = 0;
 
       // 1. Descargar Clientes (Clientes!A2:K)
       const resClientes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Clientes!A2:K`, {
@@ -647,6 +746,7 @@ const GoogleSync = {
             categoria: r[4] || 'General',
             monto: Number(r[5]) || 0
           }));
+          finanzasCount = window.store.state.finanzas.transacciones.length;
         } else {
           window.store.state.finanzas.transacciones = [];
         }
@@ -680,13 +780,15 @@ const GoogleSync = {
       this.actualizarIndicadorUI();
 
       if (mostrarAlerta) {
-        alert(`✅ ¡Sincronización Exitosa!\n\nSe han actualizado desde Google Sheets:\n• ${clientesCount} clientes\n• ${serviciosCount} órdenes de servicio\n• ${facturasCount} facturas\n\nTus dispositivos están sincronizados en tiempo real.`);
+        alert(`✅ ¡Sincronización Exitosa!\n\nSe han actualizado desde Google Sheets:\n• ${clientesCount} clientes\n• ${serviciosCount} órdenes de servicio\n• ${facturasCount} facturas\n• ${finanzasCount} movimientos de finanzas\n\nTus dispositivos están sincronizados en tiempo real.`);
       }
     } catch (e) {
       console.warn('Error al descargar datos de Google Sheets:', e);
       if (mostrarAlerta) {
         alert('Hubo un error al actualizar desde Google Sheets: ' + e.message);
       }
+    } finally {
+      this.isSyncing = false;
     }
   },
 
