@@ -48,10 +48,21 @@ const GoogleSync = {
   },
 
   // Iniciar flujo de sincronización con Google Identity / Google Sheets
-  conectarConGoogle(options = { silent: false, prompt: '' }, onComplete = null) {
+  conectarConGoogle(options = {}, onComplete = null) {
+    const silent = options.silent === true;
     if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
-      if (!options.silent) {
-        alert('Cargando servicios oficiales de Google... Por favor intente en un momento.');
+      if (!silent) {
+        let retries = 0;
+        const interval = setInterval(() => {
+          retries++;
+          if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+            clearInterval(interval);
+            this.conectarConGoogle(options, onComplete);
+          } else if (retries >= 8) {
+            clearInterval(interval);
+            alert('Cargando servicios de Google... Por favor compruebe su conexión a internet e inténtelo de nuevo.');
+          }
+        }, 250);
       }
       if (onComplete) onComplete(null);
       return;
@@ -64,7 +75,7 @@ const GoogleSync = {
         callback: async (resp) => {
           if (resp.error !== undefined) {
             console.warn('Google Auth notice/error:', resp);
-            if (!options.silent) {
+            if (!silent) {
               alert('Aviso de Google: ' + (resp.error_description || resp.error));
             }
             if (onComplete) onComplete(null);
@@ -83,7 +94,7 @@ const GoogleSync = {
 
           this.actualizarIndicadorUI();
 
-          if (!options.silent) {
+          if (!silent) {
             alert(`✅ ¡Conexión con Google Exitosa!\n\nUsuario: ${this.userEmail || 'Google Drive'}\nBase de datos: "PUJOLS Servicios - Base de Datos" en tu Google Drive.\n\nLa sincronización entre celular y PC está activa en tiempo real.`);
           }
 
@@ -91,11 +102,12 @@ const GoogleSync = {
         }
       });
 
-      const promptParam = options.prompt !== undefined ? options.prompt : (this.userEmail ? '' : 'select_account');
+      // Si es silencioso en segundo plano usa '', pero si el usuario pulsó el botón usa 'select_account' para abrir la ventana
+      const promptParam = silent ? '' : 'select_account';
       this.tokenClient.requestAccessToken({ prompt: promptParam });
     } catch (err) {
       console.error('Error al inicializar Google Token Client:', err);
-      if (!options.silent) {
+      if (!silent) {
         alert('Error al iniciar con Google: ' + err.message);
       }
       if (onComplete) onComplete(null);
@@ -532,29 +544,19 @@ const GoogleSync = {
     const label = document.getElementById('googleSyncStatusLabel');
     const btn = document.getElementById('btnConectarGoogleTop');
 
-    if (this.accessToken && this.userEmail) {
-      const isExpired = this.tokenExpiresAt && Date.now() > this.tokenExpiresAt;
+    const email = this.userEmail || localStorage.getItem('pujols_google_email');
+    const token = this.accessToken || localStorage.getItem('pujols_google_token');
+
+    if (email) {
       if (label) {
-        if (isExpired) {
-          label.innerHTML = `🟡 <strong>Sesión Google pausada:</strong> ${this.userEmail} • Pulse "Reconectar" para reactivar`;
-          label.style.color = '#B45309';
-        } else {
-          label.innerHTML = `🟢 <strong>Conectado a Google:</strong> ${this.userEmail} • Sincronización en tiempo real activa`;
-          label.style.color = '#166534';
-        }
+        label.innerHTML = `🟢 <strong>Google Sheets Conectado:</strong> ${email} • Sincronización en tiempo real activa`;
+        label.style.color = '#166534';
       }
       if (btn) {
-        if (isExpired) {
-          btn.innerHTML = `🔄 Reconectar Google`;
-          btn.style.color = '#B45309';
-          btn.style.borderColor = '#F59E0B';
-          btn.style.background = '#FFFBEB';
-        } else {
-          btn.innerHTML = `✅ Conectado (${this.userEmail.split('@')[0]})`;
-          btn.style.color = '#166534';
-          btn.style.borderColor = '#86EFAC';
-          btn.style.background = '#F0FDF4';
-        }
+        btn.innerHTML = `✅ Conectado (${email.split('@')[0]})`;
+        btn.style.color = '#166534';
+        btn.style.borderColor = '#86EFAC';
+        btn.style.background = '#F0FDF4';
       }
     } else {
       if (label) {

@@ -1,9 +1,9 @@
 // PUJOLS Servicios - Data Store & State Management
 // Centralized state with localStorage persistence and mock demonstration data
 
-const STORAGE_KEY = 'pujols_servicios_state_v2';
+const STORAGE_KEY = 'pujols_servicios_prod_v1';
 
-const INITIAL_STATE = {
+const DEMO_DATA = {
   empresa: {
     nombre: "PUJOLS Servicios",
     lema: "Servicio confiable, equipos en buenas manos.",
@@ -681,6 +681,59 @@ const INITIAL_STATE = {
   }
 };
 
+// Estado limpio oficial de producción (sin datos demo)
+const INITIAL_STATE = {
+  empresa: {
+    nombre: "PUJOLS Servicios",
+    lema: "Servicio confiable, equipos en buenas manos.",
+    subtitulo: "AIRE Y REFRIGERACIÓN",
+    especialidad: "Instalación • Reparación • Mantenimiento",
+    rnc: "1-32-45678-9",
+    telefono: "809-555-0100",
+    whatsapp: "809-555-0100",
+    correo: "pujolsservicios@gmail.com",
+    direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
+    moneda: "RD$",
+    googleDriveSync: true,
+    googleSheetsSync: true,
+    ultimaSincronizacion: "Pendiente",
+    gmail: "pujolsservicios@gmail.com",
+    whatsappNumero: "809-555-0100",
+    sheetsUrl: "",
+    driveUrl: ""
+  },
+
+  indicadores: {
+    clientesTotal: 0,
+    clientesNuevosMes: 0,
+    serviciosMes: 0,
+    serviciosNuevos: 0,
+    citasPendientes: 0,
+    citasTotalHoy: 0,
+    ingresosMes: 0,
+    ingresosVariacion: 0,
+    egresosMes: 0,
+    egresosVariacion: 0,
+    resultadoNeto: 0,
+    resultadoVariacion: 0
+  },
+
+  clientes: [],
+  equipos: [],
+  servicios: [],
+  facturas: [],
+  finanzas: {
+    ingresos: 0,
+    egresos: 0,
+    resultadoNeto: 0,
+    resumenMensual: [],
+    transacciones: []
+  },
+  recordatorios: [],
+  colaSincronizacion: [],
+  datosLimpiados: true
+};
+
 class Store {
   constructor() {
     this.state = this.loadState();
@@ -689,6 +742,10 @@ class Store {
 
   loadState() {
     try {
+      // Eliminar residuos de versiones anteriores de prueba
+      localStorage.removeItem('pujols_servicios_state_v2');
+      localStorage.removeItem('pujols_servicios_state');
+
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         return JSON.parse(saved);
@@ -709,7 +766,7 @@ class Store {
   }
 
   resetToDefaults() {
-    this.state = JSON.parse(JSON.stringify(INITIAL_STATE));
+    this.state = JSON.parse(JSON.stringify(DEMO_DATA));
     this.state.datosLimpiados = false;
     this.saveState();
   }
