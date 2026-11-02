@@ -2070,5 +2070,42 @@ class Store {
   }
 }
 
-// Global Store Instance
-window.store = new Store();
+// Global Store Instance con inicialización garantizada y a prueba de fallos
+window.Store = Store;
+try {
+  window.store = new Store();
+} catch (err) {
+  console.error('Error al inicializar Store:', err);
+  window.store = {
+    state: JSON.parse(JSON.stringify(INITIAL_STATE)),
+    listeners: [],
+    subscribe(listener) {
+      if (typeof listener === 'function') this.listeners.push(listener);
+      return () => {};
+    },
+    notifyListeners() {
+      this.listeners.forEach(l => { try { l(this.state); } catch(e){} });
+    },
+    saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); } catch(e){}
+    },
+    getClientes() { return this.state.clientes || []; },
+    getEquipos() { return this.state.equipos || []; },
+    getServicios() { return this.state.servicios || []; },
+    getFacturas() { return this.state.facturas || []; },
+    getFinanzas() { return this.state.finanzas || { ingresos: 0, egresos: 0, resultadoNeto: 0, transacciones: [] }; },
+    getRecordatorios() { return this.state.recordatorios || { otrosRecordatorios: [] }; },
+    getColaSincronizacion() { return this.state.colaSincronizacion || []; },
+    getFilteredDashboardStats() {
+      return {
+        totalServicios: 0,
+        totalIngresos: 0,
+        ticketPromedio: 0,
+        periodoNombre: 'Producción Real',
+        series: [],
+        distribucionEquipos: [],
+        distribucionServicios: []
+      };
+    }
+  };
+}

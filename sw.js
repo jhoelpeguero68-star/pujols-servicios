@@ -1,5 +1,5 @@
 // Service Worker for PUJOLS Servicios PWA
-const CACHE_NAME = 'pujols-servicios-v28';
+const CACHE_NAME = 'pujols-servicios-v29';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -53,15 +53,24 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Estrategia Network-First: Siempre intenta cargar la versión más reciente desde la red
-// Si no hay conexión (offline), utiliza la copia en caché como respaldo
+// Estrategia Network-First con fallback seguro y soporte para query-params (?v=X)
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  // NO interceptar APIs externas de Google (Sheets, Drive, Auth)
+  try {
+    const url = new URL(event.request.url);
+    if (url.origin !== self.location.origin) {
+      return; // Dejar que el navegador maneje la petición de red normal
+    }
+  } catch (e) {
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -70,12 +79,13 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
+        // En caso de fallo o modo offline, buscar en caché ignorando parámetros de versión (?v=X)
+        return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
           if (cachedResponse) {
             return cachedResponse;
           }
           if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
-            return caches.match('./index.html');
+            return caches.match('./index.html', { ignoreSearch: true });
           }
         });
       })

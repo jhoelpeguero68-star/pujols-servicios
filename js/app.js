@@ -23,10 +23,12 @@ const App = {
     this.updateNavBadges();
 
     // 3. Suscribirse a cambios del store para re-renderizar la pantalla activa si es necesario
-    window.store.subscribe(() => {
-      this.refreshCurrentScreen();
-      this.updateNavBadges();
-    });
+    if (window.store && typeof window.store.subscribe === 'function') {
+      window.store.subscribe(() => {
+        this.refreshCurrentScreen();
+        this.updateNavBadges();
+      });
+    }
 
     // 4. Inicializar eventos de navegación y menú móvil
     this.setupNavigationEvents();

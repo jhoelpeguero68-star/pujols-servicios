@@ -686,8 +686,8 @@ const GoogleSync = {
   // Subir todos los datos actuales a la hoja de cálculo
   async subirTodosLosDatosASheet() {
     await this.asegurarTokenValido();
+    if (!window.store || !window.store.state || !this.spreadsheetId || !this.accessToken) return;
     const st = window.store.state;
-    if (!st || !this.spreadsheetId || !this.accessToken) return;
 
     // 1. Clientes
     if (st.clientes && st.clientes.length > 0) {
@@ -793,6 +793,15 @@ const GoogleSync = {
   async descargarDatosDeSheet(mostrarAlerta = false) {
     if (!this.spreadsheetId || !this.accessToken) return;
     if (this.isSyncing) return;
+
+    if (!window.store || !window.store.state) {
+      console.warn('Store no disponible para sincronización.');
+      if (mostrarAlerta) {
+        alert('El sistema local está inicializándose. Por favor intente de nuevo en un segundo.');
+      }
+      return;
+    }
+
     this.isSyncing = true;
 
     try {
