@@ -20,10 +20,12 @@ const App = {
     // 2. Cargar pantalla inicial
     this.actualizarFechaCabecera();
     this.navigate('inicio');
+    this.updateNavBadges();
 
     // 3. Suscribirse a cambios del store para re-renderizar la pantalla activa si es necesario
     window.store.subscribe(() => {
       this.refreshCurrentScreen();
+      this.updateNavBadges();
     });
 
     // 4. Inicializar eventos de navegación y menú móvil
@@ -197,6 +199,7 @@ const App = {
 
     // Actualizar títulos en el encabezado
     this.updateHeaderTitles(screenName);
+    this.updateNavBadges();
 
     // Renderizar módulo correspondiente
     this.renderModule(screenName, activeView, params);
@@ -262,9 +265,22 @@ const App = {
   },
 
   refreshCurrentScreen() {
+    this.updateNavBadges();
     const container = document.getElementById(`view-${this.currentScreen}`);
     if (container) {
       this.renderModule(this.currentScreen, container);
+    }
+  },
+
+  updateNavBadges() {
+    const badge = document.getElementById('navBadgeClientes');
+    if (!badge) return;
+    const count = (window.store && window.store.getClientes) ? window.store.getClientes().length : 0;
+    if (count > 0) {
+      badge.textContent = count;
+      badge.style.display = 'inline-flex';
+    } else {
+      badge.style.display = 'none';
     }
   },
 

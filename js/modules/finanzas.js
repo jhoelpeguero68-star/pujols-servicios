@@ -4,8 +4,11 @@ const FinanzasModule = {
   currentTab: 'resumen', // 'resumen' | 'ingresos' | 'egresos'
 
   render(container) {
-    const fin = window.store.getFinanzas();
-    const transacciones = fin.transacciones || [];
+    if (!container) return;
+
+    try {
+      const fin = (window.store && window.store.getFinanzas) ? window.store.getFinanzas() : { ingresos: 0, egresos: 0, resultadoNeto: 0, transacciones: [], resumenMensual: [] };
+      const transacciones = fin.transacciones || [];
 
     const txFiltered = transacciones.filter(t => {
       if (this.currentTab === 'ingresos') return t.tipo === 'Ingreso';
@@ -153,6 +156,16 @@ const FinanzasModule = {
         </div>
       </div>
     `;
+    } catch (err) {
+      console.error('Error renderizando finanzas:', err);
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px 20px;">
+          <p style="color: #EF4444; font-weight: 700; margin-bottom: 8px;">Ocurrió un inconveniente al cargar finanzas.</p>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${err.message || ''}</p>
+          <button class="btn btn-primary btn-sm" onclick="App.refreshCurrentScreen()">Reintentar</button>
+        </div>
+      `;
+    }
   },
 
   renderMonthlyChart(data) {

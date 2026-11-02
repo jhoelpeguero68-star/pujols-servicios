@@ -5,21 +5,25 @@ const FacturacionModule = {
   searchQuery: '',
 
   render(container) {
-    const facturas = window.store.getFacturas();
+    if (!container) return;
 
-    const filtered = facturas.filter(f => {
-      // Estado filter
-      if (this.activeFilter === 'pagadas' && f.estado !== 'Pagada') return false;
-      if (this.activeFilter === 'pendientes' && f.estado !== 'Pendiente') return false;
+    try {
+      const facturas = (window.store && window.store.getFacturas) ? (window.store.getFacturas() || []) : [];
 
-      // Search filter
-      if (this.searchQuery) {
-        const q = this.searchQuery.toLowerCase();
-        return f.numero.toLowerCase().includes(q) ||
-               f.clienteNombre.toLowerCase().includes(q);
-      }
-      return true;
-    });
+      const filtered = facturas.filter(f => {
+        if (!f) return false;
+        // Estado filter
+        if (this.activeFilter === 'pagadas' && f.estado !== 'Pagada') return false;
+        if (this.activeFilter === 'pendientes' && f.estado !== 'Pendiente') return false;
+
+        // Search filter
+        if (this.searchQuery) {
+          const q = this.searchQuery.toLowerCase();
+          return (f.numero || '').toLowerCase().includes(q) ||
+                 (f.clienteNombre || '').toLowerCase().includes(q);
+        }
+        return true;
+      });
 
     container.innerHTML = `
       <!-- Cabecera de Facturación -->
@@ -67,7 +71,19 @@ const FacturacionModule = {
 
       <!-- Listado de Facturas -->
       <div class="list-container">
-        ${filtered.length === 0 ? `
+        ${facturas.length === 0 ? `
+          <div class="card" style="text-align: center; padding: 48px 20px;">
+            <span style="font-size: 40px; display: block; margin-bottom: 12px;">📄</span>
+            <h3 style="font-size: 17px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px;">No hay facturas registradas</h3>
+            <p style="font-size: 14px; color: var(--text-muted); max-width: 460px; margin: 0 auto 20px auto;">
+              Genera facturas oficiales y comprobantes con código QR directo a tu Instagram y WhatsApp.
+            </p>
+            <button class="btn btn-primary" onclick="App.openModal('modalGenerarFactura')">
+              <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>
+              + Generar Primera Factura
+            </button>
+          </div>
+        ` : (filtered.length === 0 ? `
           <div class="card" style="text-align: center; padding: 40px 20px;">
             <p style="font-size: 16px; color: var(--text-muted); margin-bottom: 12px;">No se encontraron facturas con los filtros seleccionados.</p>
             <button class="btn btn-outline btn-sm" onclick="FacturacionModule.setFilter('todas'); FacturacionModule.onSearch('');">Ver todas</button>
@@ -90,7 +106,7 @@ const FacturacionModule = {
               </button>
             </div>
           </div>
-        `).join('')}
+        `).join(''))}
       </div>
 
       <!-- Modal Visor de Factura PDF -->
@@ -116,6 +132,16 @@ const FacturacionModule = {
         </div>
       </div>
     `;
+    } catch (err) {
+      console.error('Error renderizando facturacion:', err);
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px 20px;">
+          <p style="color: #EF4444; font-weight: 700; margin-bottom: 8px;">Ocurrió un inconveniente al cargar las facturas.</p>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${err.message || ''}</p>
+          <button class="btn btn-primary btn-sm" onclick="App.refreshCurrentScreen()">Reintentar</button>
+        </div>
+      `;
+    }
   },
 
   setFilter(filter) {

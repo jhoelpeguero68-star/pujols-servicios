@@ -2,19 +2,22 @@
 
 const RecordatoriosModule = {
   render(container) {
-    const rec = window.store.getRecordatorios() || {};
-    const eqDestacado = rec.equipoDestacado || {
-      id: "REC-DEF",
-      titulo: "Seguimiento Preventivo",
-      especificaciones: "Mantenimiento Periódico PUJOLS Servicios",
-      clienteNombre: "Cliente",
-      clienteTelefono: "829-725-4450",
-      timeline: []
-    };
-    const timeline = Array.isArray(eqDestacado.timeline) ? eqDestacado.timeline : [];
-    const otros = Array.isArray(rec.otrosRecordatorios) ? rec.otrosRecordatorios : [];
+    if (!container) return;
 
-    container.innerHTML = `
+    try {
+      const rec = (window.store && window.store.getRecordatorios) ? (window.store.getRecordatorios() || {}) : {};
+      const eqDestacado = rec.equipoDestacado || {
+        id: "REC-DEF",
+        titulo: "Seguimiento Preventivo",
+        especificaciones: "Mantenimiento Periódico PUJOLS Servicios",
+        clienteNombre: "Cliente",
+        clienteTelefono: "829-725-4450",
+        timeline: []
+      };
+      const timeline = Array.isArray(eqDestacado.timeline) ? eqDestacado.timeline : [];
+      const otros = Array.isArray(rec.otrosRecordatorios) ? rec.otrosRecordatorios : [];
+
+      container.innerHTML = `
       <!-- Cabecera de Recordatorios -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
         <div>
@@ -169,6 +172,16 @@ const RecordatoriosModule = {
         </div>
       </div>
     `;
+    } catch (err) {
+      console.error('Error renderizando recordatorios:', err);
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px 20px;">
+          <p style="color: #EF4444; font-weight: 700; margin-bottom: 8px;">Ocurrió un inconveniente al cargar los recordatorios.</p>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${err.message || ''}</p>
+          <button class="btn btn-primary btn-sm" onclick="App.refreshCurrentScreen()">Reintentar</button>
+        </div>
+      `;
+    }
   },
 
   // Modal para agregar un nuevo recordatorio de forma manual

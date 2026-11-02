@@ -9,56 +9,69 @@ const ServiciosModule = {
   },
 
   render(container) {
-    const servicios = window.store.getServicios();
+    if (!container) return;
 
-    container.innerHTML = `
-      <!-- Cabecera de Servicios -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-        <div>
-          <h2 style="font-size: 22px; font-weight: 800; color: var(--color-primary);">Servicios, agenda y órdenes</h2>
-          <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Planificación diaria de visitas técnicas, instalaciones y reparaciones</p>
-        </div>
-        <button class="btn btn-primary" onclick="App.openModal('modalNuevaOrden')">
-          <span class="icon">
-            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-          </span>
-          + Nueva orden de servicio
-        </button>
-      </div>
+    try {
+      const servicios = (window.store && window.store.getServicios) ? (window.store.getServicios() || []) : [];
 
-      <!-- Pestañas y Selector de Fecha -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
-        <div class="tabs-container">
-          <button class="tab-btn ${this.currentTab === 'agenda' ? 'active' : ''}" onclick="ServiciosModule.setTab('agenda')">
-            Agenda
-          </button>
-          <button class="tab-btn ${this.currentTab === 'ordenes' ? 'active' : ''}" onclick="ServiciosModule.setTab('ordenes')">
-            Órdenes
-          </button>
-          <button class="tab-btn ${this.currentTab === 'historial' ? 'active' : ''}" onclick="ServiciosModule.setTab('historial')">
-            Historial
+      container.innerHTML = `
+        <!-- Cabecera de Servicios -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 22px; font-weight: 800; color: var(--color-primary);">Servicios, agenda y órdenes</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Planificación diaria de visitas técnicas, instalaciones y reparaciones</p>
+          </div>
+          <button class="btn btn-primary" onclick="App.openModal('modalNuevaOrden')">
+            <span class="icon">
+              <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </span>
+            + Nueva orden de servicio
           </button>
         </div>
 
-        <!-- Selector de Día Navegable -->
-        <div style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-full); padding: 4px 12px; box-shadow: var(--shadow-xs);">
-          <button class="btn btn-icon btn-sm btn-outline" style="border: none; width: 28px; height: 28px;" onclick="ServiciosModule.changeDate(-1)">
-            <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></span>
-          </button>
-          <span style="font-size: 13px; font-weight: 700; color: var(--color-primary); min-width: 130px; text-align: center;">
-            📅 ${this.getSelectedDateText()}
-          </span>
-          <button class="btn btn-icon btn-sm btn-outline" style="border: none; width: 28px; height: 28px;" onclick="ServiciosModule.changeDate(1)">
-            <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></span>
-          </button>
-        </div>
-      </div>
+        <!-- Pestañas y Selector de Fecha -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+          <div class="tabs-container">
+            <button class="tab-btn ${this.currentTab === 'agenda' ? 'active' : ''}" onclick="ServiciosModule.setTab('agenda')">
+              Agenda
+            </button>
+            <button class="tab-btn ${this.currentTab === 'ordenes' ? 'active' : ''}" onclick="ServiciosModule.setTab('ordenes')">
+              Órdenes
+            </button>
+            <button class="tab-btn ${this.currentTab === 'historial' ? 'active' : ''}" onclick="ServiciosModule.setTab('historial')">
+              Historial
+            </button>
+          </div>
 
-      <!-- Contenido según la pestaña activa -->
-      <div id="serviciosTabContent">
-        ${this.renderTabContent(servicios)}
-      </div>
-    `;
+          <!-- Selector de Día Navegable -->
+          <div style="display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-full); padding: 4px 12px; box-shadow: var(--shadow-xs);">
+            <button class="btn btn-icon btn-sm btn-outline" style="border: none; width: 28px; height: 28px;" onclick="ServiciosModule.changeDate(-1)">
+              <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></span>
+            </button>
+            <span style="font-size: 13px; font-weight: 700; color: var(--color-primary); min-width: 130px; text-align: center;">
+              📅 ${this.getSelectedDateText()}
+            </span>
+            <button class="btn btn-icon btn-sm btn-outline" style="border: none; width: 28px; height: 28px;" onclick="ServiciosModule.changeDate(1)">
+              <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenido según la pestaña activa -->
+        <div id="serviciosTabContent">
+          ${this.renderTabContent(servicios)}
+        </div>
+      `;
+    } catch (err) {
+      console.error('Error renderizando servicios:', err);
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px 20px;">
+          <p style="color: #EF4444; font-weight: 700; margin-bottom: 8px;">Ocurrió un inconveniente al cargar los servicios.</p>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${err.message || ''}</p>
+          <button class="btn btn-primary btn-sm" onclick="App.refreshCurrentScreen()">Reintentar</button>
+        </div>
+      `;
+    }
   },
 
   renderTabContent(servicios) {
@@ -77,42 +90,71 @@ const ServiciosModule = {
 
     return `
       <div class="list-container">
-        ${agendaItems.map(item => {
-          let badgeClass = 'badge-programado';
-          if (item.estado === 'En proceso') badgeClass = 'badge-en-proceso';
-          if (item.estado === 'Completado') badgeClass = 'badge-completado';
+        ${agendaItems.length === 0 ? `
+          <div class="card" style="text-align: center; padding: 48px 20px;">
+            <span style="font-size: 40px; display: block; margin-bottom: 12px;">📅</span>
+            <h3 style="font-size: 17px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px;">No hay servicios agendados</h3>
+            <p style="font-size: 14px; color: var(--text-muted); max-width: 460px; margin: 0 auto 20px auto;">
+              Programa una visita técnica, instalación o mantenimiento preventivo para hoy.
+            </p>
+            <button class="btn btn-primary" onclick="App.openModal('modalNuevaOrden')">
+              <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>
+              + Crear Orden de Servicio
+            </button>
+          </div>
+        ` : `
+          ${agendaItems.map(item => {
+            let badgeClass = 'badge-programado';
+            if (item.estado === 'En proceso') badgeClass = 'badge-en-proceso';
+            if (item.estado === 'Completado') badgeClass = 'badge-completado';
 
-          return `
-            <div class="service-item-card">
-              <div class="service-item-time">
-                ${item.hora}
-              </div>
-              <div class="service-item-content">
-                <div class="service-item-title">${item.titulo}</div>
-                <div class="service-item-client">
-                  👤 ${item.clienteNombre} &nbsp;•&nbsp; 🔧 Técnico: ${item.tecnico}
+            return `
+              <div class="service-item-card">
+                <div class="service-item-time">
+                  ${item.hora}
+                </div>
+                <div class="service-item-content">
+                  <div class="service-item-title">${item.titulo}</div>
+                  <div class="service-item-client">
+                    👤 ${item.clienteNombre} &nbsp;•&nbsp; 🔧 Técnico: ${item.tecnico}
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span class="badge ${badgeClass}">${item.estado}</span>
+                  <button class="btn btn-outline btn-sm" onclick="ServiciosModule.verDetalleOrden('${item.id}')">
+                    Ver orden
+                  </button>
                 </div>
               </div>
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span class="badge ${badgeClass}">${item.estado}</span>
-                <button class="btn btn-outline btn-sm" onclick="ServiciosModule.verDetalleOrden('${item.id}')">
-                  Ver orden
-                </button>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-
-      <div style="margin-top: 24px; text-align: center;">
-        <button class="btn btn-primary btn-lg" onclick="App.openModal('modalNuevaOrden')">
-          + Nueva orden de servicio
-        </button>
+            `;
+          }).join('')}
+          <div style="margin-top: 24px; text-align: center;">
+            <button class="btn btn-primary btn-lg" onclick="App.openModal('modalNuevaOrden')">
+              + Nueva orden de servicio
+            </button>
+          </div>
+        `}
       </div>
     `;
   },
 
   renderOrdenes(servicios) {
+    if (!servicios || servicios.length === 0) {
+      return `
+        <div class="card" style="text-align: center; padding: 48px 20px;">
+          <span style="font-size: 40px; display: block; margin-bottom: 12px;">🔧</span>
+          <h3 style="font-size: 17px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px;">No hay órdenes registradas</h3>
+          <p style="font-size: 14px; color: var(--text-muted); max-width: 460px; margin: 0 auto 20px auto;">
+            Crea órdenes de trabajo para asignar tareas de instalación, reparación o mantenimiento a George Pujols.
+          </p>
+          <button class="btn btn-primary" onclick="App.openModal('modalNuevaOrden')">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>
+            + Crear Primera Orden
+          </button>
+        </div>
+      `;
+    }
+
     return `
       <div style="display: flex; flex-direction: column; gap: 14px;">
         ${servicios.map(s => `
@@ -178,7 +220,11 @@ const ServiciosModule = {
           <span style="font-size: 12px; color: var(--text-muted);">Últimas semanas</span>
         </div>
         <div class="list-container">
-          ${terminados.map(s => `
+          ${terminados.length === 0 ? `
+            <div style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+              <p style="font-size: 14px;">No hay servicios completados en el historial todavía.</p>
+            </div>
+          ` : terminados.map(s => `
             <div style="padding: 12px 14px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-size: 13px;">
               <div>
                 <strong style="color: var(--color-primary);">${s.ordenId} - ${s.titulo}</strong>

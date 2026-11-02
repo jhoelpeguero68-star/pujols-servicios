@@ -4,65 +4,83 @@ const ClientesModule = {
   activeSearch: '',
 
   render(container) {
-    const clientes = window.store.getClientes();
-    const filtered = clientes.filter(c => {
-      if (!this.activeSearch) return true;
-      const term = this.activeSearch.toLowerCase();
-      return c.nombre.toLowerCase().includes(term) ||
-             c.telefono.toLowerCase().includes(term) ||
-             c.direccion.toLowerCase().includes(term);
-    });
+    if (!container) return;
 
-    container.innerHTML = `
-      <!-- Cabecera de Clientes -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-        <div>
-          <h2 style="font-size: 22px; font-weight: 800; color: var(--color-primary);">Clientes y equipos</h2>
-          <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Gestión de cartera de clientes residenciales y comerciales</p>
-        </div>
-        <button class="btn btn-primary" onclick="App.openModal('modalNuevoCliente')">
-          <span class="icon">
-            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-          </span>
-          + Nuevo cliente
-        </button>
-      </div>
+    try {
+      const clientes = (window.store && window.store.getClientes) ? (window.store.getClientes() || []) : [];
+      const equipos = (window.store && window.store.getEquipos) ? (window.store.getEquipos() || []) : [];
 
-      <!-- Buscador y Toggle Clientes / Equipos -->
-      <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
-        <div class="search-bar-wrapper">
-          <span class="search-bar-icon icon">
-            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-          </span>
-          <input
-            type="text"
-            id="clienteSearchInput"
-            class="search-bar-input"
-            placeholder="Buscar cliente por nombre, teléfono o dirección..."
-            value="${this.activeSearch}"
-            oninput="ClientesModule.onSearch(this.value)"
-          >
-        </div>
+      const filtered = clientes.filter(c => {
+        if (!c) return false;
+        if (!this.activeSearch) return true;
+        const term = this.activeSearch.toLowerCase();
+        return (c.nombre || '').toLowerCase().includes(term) ||
+               (c.telefono || '').toLowerCase().includes(term) ||
+               (c.direccion || '').toLowerCase().includes(term);
+      });
 
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div class="tabs-container">
-            <button class="tab-btn active">Clientes (${filtered.length})</button>
-            <button class="tab-btn" onclick="App.navigate('equipos')">Equipos (${window.store.getEquipos().length})</button>
+      container.innerHTML = `
+        <!-- Cabecera de Clientes -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 22px; font-weight: 800; color: var(--color-primary);">Clientes y equipos</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Gestión de cartera de clientes residenciales y comerciales</p>
           </div>
-          <span style="font-size: 12px; color: var(--text-muted);">
-            Mostrando <strong>${filtered.length}</strong> de ${clientes.length} clientes
-          </span>
+          <button class="btn btn-primary" onclick="App.openModal('modalNuevoCliente')">
+            <span class="icon">
+              <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </span>
+            + Nuevo cliente
+          </button>
         </div>
-      </div>
 
-      <!-- Listado de Clientes -->
-      <div class="list-container">
-        ${filtered.length === 0 ? `
-          <div class="card" style="text-align: center; padding: 40px 20px;">
-            <p style="font-size: 16px; color: var(--text-muted); margin-bottom: 12px;">No se encontraron clientes con ese criterio.</p>
-            <button class="btn btn-outline btn-sm" onclick="ClientesModule.onSearch('')">Limpiar búsqueda</button>
+        <!-- Buscador y Toggle Clientes / Equipos -->
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+          <div class="search-bar-wrapper">
+            <span class="search-bar-icon icon">
+              <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            </span>
+            <input
+              type="text"
+              id="clienteSearchInput"
+              class="search-bar-input"
+              placeholder="Buscar cliente por nombre, teléfono o dirección..."
+              value="${this.activeSearch}"
+              oninput="ClientesModule.onSearch(this.value)"
+            >
           </div>
-        ` : filtered.map(c => `
+
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div class="tabs-container">
+              <button class="tab-btn active">Clientes (${filtered.length})</button>
+              <button class="tab-btn" onclick="App.navigate('equipos')">Equipos (${equipos.length})</button>
+            </div>
+            <span style="font-size: 12px; color: var(--text-muted);">
+              Mostrando <strong>${filtered.length}</strong> de ${clientes.length} clientes
+            </span>
+          </div>
+        </div>
+
+        <!-- Listado de Clientes -->
+        <div class="list-container">
+          ${clientes.length === 0 ? `
+            <div class="card" style="text-align: center; padding: 48px 20px;">
+              <span style="font-size: 40px; display: block; margin-bottom: 12px;">👥</span>
+              <h3 style="font-size: 17px; font-weight: 700; color: var(--color-primary); margin-bottom: 6px;">No hay clientes registrados</h3>
+              <p style="font-size: 14px; color: var(--text-muted); max-width: 480px; margin: 0 auto 20px auto;">
+                Comienza registrando tu primer cliente residencial o comercial para asociar sus equipos y gestionar órdenes.
+              </p>
+              <button class="btn btn-primary" onclick="App.openModal('modalNuevoCliente')">
+                <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>
+                + Registrar Primer Cliente
+              </button>
+            </div>
+          ` : (filtered.length === 0 ? `
+            <div class="card" style="text-align: center; padding: 40px 20px;">
+              <p style="font-size: 16px; color: var(--text-muted); margin-bottom: 12px;">No se encontraron clientes con ese criterio.</p>
+              <button class="btn btn-outline btn-sm" onclick="ClientesModule.onSearch('')">Limpiar búsqueda</button>
+            </div>
+          ` : filtered.map(c => `
           <div class="client-item" onclick="ClientesModule.showDetail('${c.id}')">
             <div class="client-item-left">
               <div class="avatar-initials" style="background-color: ${c.colorBadge || '#0A2540'};">
@@ -103,7 +121,7 @@ const ClientesModule = {
               </span>
             </div>
           </div>
-        `).join('')}
+        `).join(''))}
       </div>
 
       <!-- Modal Detalle de Cliente -->
@@ -125,6 +143,16 @@ const ClientesModule = {
         </div>
       </div>
     `;
+    } catch (err) {
+      console.error('Error renderizando clientes:', err);
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px 20px;">
+          <p style="color: #EF4444; font-weight: 700; margin-bottom: 8px;">Ocurrió un inconveniente al cargar los clientes.</p>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${err.message || ''}</p>
+          <button class="btn btn-primary btn-sm" onclick="App.refreshCurrentScreen()">Reintentar</button>
+        </div>
+      `;
+    }
   },
 
   onSearch(query) {

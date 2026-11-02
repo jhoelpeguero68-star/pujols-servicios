@@ -999,6 +999,19 @@ class Store {
             if (r.telefono) r.telefono = PhoneUtil.normalizeLocal(r.telefono);
           });
         }
+        if (!Array.isArray(parsed.clientes)) parsed.clientes = [];
+        if (!Array.isArray(parsed.equipos)) parsed.equipos = [];
+        if (!Array.isArray(parsed.servicios)) parsed.servicios = [];
+        if (!Array.isArray(parsed.facturas)) parsed.facturas = [];
+        if (!parsed.indicadores || typeof parsed.indicadores !== 'object') {
+          parsed.indicadores = JSON.parse(JSON.stringify(INITIAL_STATE.indicadores));
+        }
+        if (!parsed.finanzas || typeof parsed.finanzas !== 'object') {
+          parsed.finanzas = JSON.parse(JSON.stringify(INITIAL_STATE.finanzas));
+        }
+        if (!Array.isArray(parsed.finanzas.transacciones)) parsed.finanzas.transacciones = [];
+        if (!Array.isArray(parsed.colaSincronizacion)) parsed.colaSincronizacion = [];
+
         return parsed;
       }
     } catch (e) {
@@ -1236,6 +1249,10 @@ class Store {
     }
 
     this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevoEquipo) {
+      window.GoogleSync.sincronizarNuevoEquipo(newEquipo);
+    }
     return newEquipo;
   }
 

@@ -396,6 +396,84 @@ const GoogleSync = {
     }
   },
 
+  // Sincronizar un nuevo equipo o actualización hacia Google Sheets (inserta o actualiza)
+  async sincronizarNuevoEquipo(eq) {
+    await this.asegurarTokenValido();
+    if (!this.spreadsheetId || !this.accessToken) {
+      if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('equipo', eq);
+      return;
+    }
+
+    try {
+      const row = [
+        eq.id,
+        eq.clienteId || '',
+        eq.clienteNombre || '',
+        eq.tipo || 'Aire Acondicionado',
+        eq.marca || '',
+        `${eq.modelo || ''} / ${eq.capacidad || ''}`.trim(),
+        eq.ubicacion || '',
+        eq.ultimoMantenimiento || (window.DateUtil ? window.DateUtil.getISODate() : '')
+      ];
+
+      const checkRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Equipos!A2:A`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const existingIndex = checkData.values ? checkData.values.findIndex(r => r[0] === eq.id) : -1;
+
+        if (existingIndex !== -1) {
+          const rowIndex = existingIndex + 2;
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Equipos!A${rowIndex}:H${rowIndex}?valueInputOption=USER_ENTERED`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ values: [row] })
+          });
+          console.log(`Equipo actualizado en fila ${rowIndex} de Google Sheets:`, eq.id);
+          return;
+        }
+      }
+
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Equipos!A:H:append?valueInputOption=USER_ENTERED`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [row] })
+      });
+      console.log('Nuevo equipo sincronizado con Google Sheets exitosamente:', eq.id);
+    } catch (e) {
+      console.warn('Error al sincronizar equipo en Google Sheets:', e);
+      if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('equipo', eq);
+    }
+  },
+
+  // Eliminar un equipo de Google Sheets vaciando su fila
+  async eliminarEquipoSheet(equipoId) {
+    await this.asegurarTokenValido();
+    if (!this.spreadsheetId || !this.accessToken) return;
+    try {
+      const checkRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Equipos!A2:A`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const existingIndex = checkData.values ? checkData.values.findIndex(r => r[0] === equipoId) : -1;
+        if (existingIndex !== -1) {
+          const rowIndex = existingIndex + 2;
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values:batchClear`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ranges: [`Equipos!A${rowIndex}:H${rowIndex}`] })
+          });
+          console.log(`Equipo eliminado de fila ${rowIndex} en Google Sheets:`, equipoId);
+        }
+      }
+    } catch (e) {
+      console.warn('Error eliminando equipo en Google Sheets:', e);
+    }
+  },
+
   // Sincronizar un nuevo servicio / cita agendada hacia Google Sheets (inserta o actualiza)
   async sincronizarNuevoServicio(s) {
     await this.asegurarTokenValido();
@@ -623,6 +701,25 @@ const GoogleSync = {
       });
     }
 
+    // 1.1 Equipos
+    if (st.equipos && st.equipos.length > 0) {
+      const eqRows = st.equipos.map(eq => [
+        eq.id,
+        eq.clienteId || '',
+        eq.clienteNombre || '',
+        eq.tipo || 'Aire Acondicionado',
+        eq.marca || '',
+        `${eq.modelo || ''} / ${eq.capacidad || ''}`.trim(),
+        eq.ubicacion || '',
+        eq.ultimoMantenimiento || (window.DateUtil ? window.DateUtil.getISODate() : '')
+      ]);
+      await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Equipos!A2:H?valueInputOption=USER_ENTERED`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: eqRows })
+      });
+    }
+
     // 2. Servicios
     if (st.servicios && st.servicios.length > 0) {
       const sRows = st.servicios.map(s => [
@@ -736,6 +833,47 @@ const GoogleSync = {
             }));
             clientesCount = window.store.state.clientes.length;
             window.store.state.indicadores.clientesTotal = clientesCount;
+          }
+        }
+      }
+
+      // 1.1 Descargar Equipos (Equipos!A2:H)
+      let equiposCount = 0;
+      const resEquipos = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Equipos!A2:H`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+
+      if (resEquipos.ok) {
+        const data = await resEquipos.json();
+        if (data.values && data.values.length > 0) {
+          const reales = data.values.filter(r => r[0] && r[3]);
+          if (reales.length > 0) {
+            window.store.state.equipos = reales.map(r => {
+              const tipoLower = (r[3] || '').toLowerCase();
+              let icono = 'ac';
+              if (tipoLower.includes('nevera') || tipoLower.includes('refrig')) icono = 'refrigerator';
+              else if (tipoLower.includes('lavadora')) icono = 'washer';
+
+              const modelCap = (r[5] || '').split('/');
+              const mod = (modelCap[0] || '').trim() || 'Estándar';
+              const cap = (modelCap[1] || '').trim() || (r[5] || '12,000 BTU');
+
+              return {
+                id: r[0],
+                clienteId: r[1] || '',
+                clienteNombre: r[2] || 'Cliente General',
+                tipo: r[3] || 'Aire Acondicionado',
+                marca: r[4] || 'General',
+                modelo: mod,
+                capacidad: cap,
+                ubicacion: r[6] || 'General',
+                ultimoMantenimiento: r[7] || (window.DateUtil ? window.DateUtil.getISODate() : ''),
+                proximoMantenimiento: window.DateUtil ? window.DateUtil.calcularFechaMeses(3, r[7] || new Date()) : '',
+                estado: 'Operativo',
+                icono: icono
+              };
+            });
+            equiposCount = window.store.state.equipos.length;
           }
         }
       }
@@ -857,7 +995,7 @@ const GoogleSync = {
       this.actualizarIndicadorUI();
 
       if (mostrarAlerta) {
-        alert(`✅ ¡Sincronización Exitosa!\n\nSe han actualizado desde Google Sheets:\n• ${clientesCount} clientes\n• ${serviciosCount} órdenes de servicio\n• ${facturasCount} facturas\n• ${finanzasCount} movimientos de finanzas\n\nTus dispositivos están sincronizados en tiempo real.`);
+        alert(`✅ ¡Sincronización Exitosa!\n\nSe han actualizado desde Google Sheets:\n• ${clientesCount} clientes\n• ${equiposCount} equipos registrados\n• ${serviciosCount} órdenes de servicio\n• ${facturasCount} facturas\n• ${finanzasCount} movimientos de finanzas\n\nTus dispositivos están sincronizados en tiempo real.`);
       }
     } catch (e) {
       console.warn('Error al descargar datos de Google Sheets:', e);
