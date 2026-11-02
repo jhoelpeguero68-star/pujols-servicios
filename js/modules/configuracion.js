@@ -351,6 +351,23 @@ const ConfiguracionModule = {
     const sheetsUrl = (document.getElementById('cfgSheetsUrl').value || '').trim();
     const driveUrl = (document.getElementById('cfgDriveUrl').value || '').trim();
 
+    if (sheetsUrl) {
+      const match = sheetsUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        localStorage.setItem('pujols_google_sheet_id', match[1]);
+        if (window.GoogleSync) {
+          window.GoogleSync.spreadsheetId = match[1];
+        }
+      }
+    }
+
+    if (gmail) {
+      localStorage.setItem('pujols_google_email', gmail);
+      if (window.GoogleSync) {
+        window.GoogleSync.userEmail = gmail;
+      }
+    }
+
     if (window.store && typeof window.store.updateEmpresa === 'function') {
       window.store.updateEmpresa({ gmail, whatsappNumero, sheetsUrl, driveUrl });
     } else if (window.store && window.store.state) {
@@ -358,6 +375,10 @@ const ConfiguracionModule = {
       if (typeof window.store.saveState === 'function') window.store.saveState();
     }
     document.getElementById('modalConfigGoogle').remove();
+
+    if (window.GoogleSync && window.GoogleSync.actualizarIndicadorUI) {
+      window.GoogleSync.actualizarIndicadorUI();
+    }
 
     const container = document.getElementById('view-configuracion');
     if (container) this.render(container);

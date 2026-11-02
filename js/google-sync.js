@@ -16,6 +16,16 @@ const GoogleSync = {
 
   init() {
     console.log('Iniciando servicio de sincronización Google Sheets...');
+
+    // Auto-extraer spreadsheetId si está configurado en los datos de la empresa o URL
+    if (!this.spreadsheetId && window.store && window.store.state && window.store.state.empresa && window.store.state.empresa.sheetsUrl) {
+      const match = window.store.state.empresa.sheetsUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        this.spreadsheetId = match[1];
+        localStorage.setItem('pujols_google_sheet_id', this.spreadsheetId);
+      }
+    }
+
     this.actualizarIndicadorUI();
 
     // Si hay sesión registrada, verificar vigencia o renovar silenciosamente
@@ -114,19 +124,20 @@ const GoogleSync = {
 
           await this.obtenerPerfilGoogle();
           await this.inicializarHojaCalculo();
+          await this.sincronizarBidireccional(false);
 
           this.actualizarIndicadorUI();
 
           if (!silent) {
-            alert(`✅ ¡Conexión con Google Exitosa!\n\nUsuario: ${this.userEmail || 'Google Drive'}\nBase de datos: "PUJOLS Servicios - Base de Datos" en tu Google Drive.\n\nLa sincronización entre celular y PC está activa en tiempo real.`);
+            alert(`✅ ¡Conexión con Google Exitosa!\n\nUsuario: ${this.userEmail || 'Google Drive'}\nBase de datos: "PUJOLS Servicios - Base de Datos" en tu Google Drive.\n\nSincronización en tiempo real activa entre celular y PC.`);
           }
 
           if (onComplete) onComplete(this.accessToken);
         }
       });
 
-      // Si es silencioso en segundo plano usa '', pero si el usuario pulsó el botón usa 'select_account' para abrir la ventana
-      const promptParam = silent ? '' : 'select_account';
+      // Si el usuario pulsó el botón, solicitar consentimiento explícito; en segundo plano, renovación silenciosa
+      const promptParam = silent ? '' : 'consent';
       this.tokenClient.requestAccessToken({ prompt: promptParam });
     } catch (err) {
       console.error('Error al inicializar Google Token Client:', err);
@@ -173,6 +184,8 @@ const GoogleSync = {
           this.spreadsheetId = searchData.files[0].id;
           localStorage.setItem('pujols_google_sheet_id', this.spreadsheetId);
           console.log('Hoja de cálculo existente encontrada:', this.spreadsheetId);
+          await this.asegurarPestanasExistentes();
+          await this.subirTodosLosDatosASheet();
           await this.descargarDatosDeSheet();
           return;
         }
@@ -793,26 +806,47 @@ const GoogleSync = {
     console.log('Todos los datos se sincronizaron con Google Sheets exitosamente.');
   },
 
-  // Sincronizar y actualizar todos los datos (Clientes, Servicios, Facturas, Finanzas) desde Google Sheets
+  // Sincronizar y actualizar todos los datos (Clientes, Servicios, Facturas, Finanzas) bidireccionalmente
   async actualizarTodoDesdeSheet(mostrarAlerta = false) {
     if (!this.userEmail && !this.accessToken) {
-      if (confirm('Aún no has conectado tu cuenta de Google en este dispositivo.\n\n¿Deseas conectar Google Sheets ahora para sincronizar tus clientes y servicios?')) {
-        this.conectarConGoogle({ silent: false }, async () => {
-          await this.descargarDatosDeSheet(mostrarAlerta);
-        });
-      }
+      // Directamente solicitar conexión sin confirm() para no perder el gesto de usuario en navegadores móviles (Safari/iOS)
+      this.conectarConGoogle({ silent: false }, async () => {
+        await this.sincronizarBidireccional(mostrarAlerta);
+      });
       return;
     }
 
     await this.asegurarTokenValido();
     if (!this.accessToken) {
       this.conectarConGoogle({ silent: false }, async () => {
-        await this.descargarDatosDeSheet(mostrarAlerta);
+        await this.sincronizarBidireccional(mostrarAlerta);
       });
       return;
     }
 
-    await this.descargarDatosDeSheet(mostrarAlerta);
+    await this.sincronizarBidireccional(mostrarAlerta);
+  },
+
+  // Sincronización bidireccional completa: Subir datos locales a la nube + Descargar datos de la nube
+  async sincronizarBidireccional(mostrarAlerta = false) {
+    if (!this.spreadsheetId || !this.accessToken) return;
+
+    try {
+      await this.asegurarPestanasExistentes();
+      // 1. Subir registros locales hacia Google Sheets
+      await this.subirTodosLosDatosASheet();
+      // 2. Descargar registros actualizados desde Google Sheets
+      await this.descargarDatosDeSheet(mostrarAlerta);
+      // 3. Procesar cola offline
+      if (window.store && typeof window.store.procesarColaSincronizacion === 'function') {
+        window.store.procesarColaSincronizacion();
+      }
+    } catch (e) {
+      console.warn('Error en sincronización bidireccional:', e);
+      if (mostrarAlerta) {
+        alert('Aviso al sincronizar con Google Sheets: ' + e.message);
+      }
+    }
   },
 
   // Descargar todos los datos desde Google Sheets hacia la aplicación local
