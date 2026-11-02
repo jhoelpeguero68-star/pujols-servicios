@@ -3,296 +3,351 @@
 
 const DashboardModule = {
   // Filtros activos para el gráfico interactivo
-  activeMonth: 'Oct',        // 'Oct' | 'Sep' | 'Ago' | 'Jul' | 'todos'
+  activeMonth: 'actual',     // 'actual' | 'todos'
   activeService: 'todos',    // 'todos' | 'Mantenimiento' | 'Reparación' | 'Instalación'
   activeEquipment: 'todos',  // 'todos' | 'Aire Acondicionado' | 'Nevera' | 'Lavadora'
 
   render(container) {
-    const state = window.store.state;
-    const ind = state.indicadores;
-    const proximos = (state.servicios || []).slice(0, 5);
+    if (!container) return;
 
-    // Obtener estadísticas filtradas según la selección del usuario
-    const stats = window.store.getFilteredDashboardStats(this.activeMonth, this.activeService, this.activeEquipment);
-    const colaOffline = window.store.getColaSincronizacion ? window.store.getColaSincronizacion() : [];
+    try {
+      const state = (window.store && window.store.state) ? window.store.state : {};
+      const ind = (state && state.indicadores) ? state.indicadores : {
+        clientesTotal: 0,
+        clientesNuevosMes: 0,
+        serviciosMes: 0,
+        serviciosNuevos: 0,
+        citasPendientes: 0,
+        citasTotalHoy: 0,
+        ingresosMes: 0,
+        ingresosVariacion: 0,
+        egresosMes: 0,
+        egresosVariacion: 0,
+        resultadoNeto: 0,
+        resultadoVariacion: 0
+      };
 
-    container.innerHTML = `
-      ${colaOffline.length > 0 ? `
-      <div style="background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <div style="font-size: 13px; color: #92400E;">
-          ⏳ <strong>${colaOffline.length} registro(s) guardados sin internet</strong> pendientes de sincronizar con Google Sheets y Drive.
-        </div>
-        <button class="btn btn-sm btn-primary" onclick="ConfiguracionModule.sincronizarAhora(); DashboardModule.render(document.getElementById('view-inicio'));">
-          🔄 Sincronizar ahora
-        </button>
-      </div>` : ''}
-      <!-- Cabecera de bienvenida y acciones rápidas -->
-      <div style="margin-bottom: 22px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
-        <div>
-          <h2 style="font-size: 22px; font-weight: 800; color: var(--color-primary); margin-bottom: 4px;">¡Buenos días!</h2>
-          <p style="font-size: 13.5px; color: var(--text-muted);">Aquí tienes un resumen de tu negocio en tiempo real.</p>
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <button class="btn btn-primary btn-sm" onclick="App.openModal('modalNuevaOrden')">
-            <span class="icon">
-              <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            </span>
-            Nueva Orden
+      const servicios = Array.isArray(state.servicios) ? state.servicios : [];
+      const proximos = servicios.slice(0, 5);
+
+      // Obtener estadísticas filtradas según la selección del usuario
+      const stats = (window.store && window.store.getFilteredDashboardStats)
+        ? window.store.getFilteredDashboardStats(this.activeMonth, this.activeService, this.activeEquipment)
+        : null;
+
+      const safeStats = stats || {
+        isMultiMonth: false,
+        periodoNombre: 'Producción Real',
+        totalServicios: 0,
+        totalIngresos: 0,
+        ticketPromedio: 0,
+        series: [],
+        distribucionEquipos: [
+          { nombre: 'Aire Acondicionado', porcentaje: 0, count: 0, icon: '❄️' },
+          { nombre: 'Nevera', porcentaje: 0, count: 0, icon: '🧊' },
+          { nombre: 'Lavadora', porcentaje: 0, count: 0, icon: '🧺' }
+        ],
+        distribucionServicios: [
+          { nombre: 'Mantenimiento', porcentaje: 0, count: 0 },
+          { nombre: 'Reparación', porcentaje: 0, count: 0 },
+          { nombre: 'Instalación', porcentaje: 0, count: 0 }
+        ]
+      };
+
+      if (!Array.isArray(safeStats.distribucionEquipos)) safeStats.distribucionEquipos = [];
+      if (!Array.isArray(safeStats.distribucionServicios)) safeStats.distribucionServicios = [];
+      if (!Array.isArray(safeStats.series)) safeStats.series = [];
+
+      const colaOffline = (window.store && window.store.getColaSincronizacion) ? window.store.getColaSincronizacion() : [];
+
+      container.innerHTML = `
+        ${colaOffline.length > 0 ? `
+        <div style="background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div style="font-size: 13px; color: #92400E;">
+            ⏳ <strong>${colaOffline.length} registro(s) guardados sin internet</strong> pendientes de sincronizar con Google Sheets y Drive.
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="ConfiguracionModule.sincronizarAhora(); DashboardModule.render(document.getElementById('view-inicio'));">
+            🔄 Sincronizar ahora
           </button>
-          <button class="btn btn-outline btn-sm" onclick="App.openModal('modalNuevoCliente')">
-            + Nuevo Cliente
-          </button>
-        </div>
-      </div>
+        </div>` : ''}
 
-      <!-- Tarjetas de Indicadores Principales (KPIs) -->
-      <div class="kpi-grid">
-        <!-- Clientes -->
-        <div class="kpi-card" onclick="App.navigate('clientes')" style="cursor: pointer;">
-          <div class="kpi-top">
-            <div class="kpi-icon blue">
+        <!-- Cabecera de bienvenida y acciones rápidas -->
+        <div style="margin-bottom: 22px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 style="font-size: 22px; font-weight: 800; color: var(--color-primary); margin-bottom: 4px;">¡Buenos días!</h2>
+            <p style="font-size: 13.5px; color: var(--text-muted);">Aquí tienes un resumen de tu negocio en tiempo real.</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn btn-primary btn-sm" onclick="App.openModal('modalNuevaOrden')">
               <span class="icon">
-                <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
               </span>
-            </div>
-            <span>Clientes</span>
-          </div>
-          <div class="kpi-value">${ind.clientesTotal}</div>
-          <div class="kpi-change positive">
-            <span>+${ind.clientesNuevosMes} este mes</span>
-          </div>
-        </div>
-
-        <!-- Servicios -->
-        <div class="kpi-card" onclick="App.navigate('servicios')" style="cursor: pointer;">
-          <div class="kpi-top">
-            <div class="kpi-icon turquoise">
-              <span class="icon">
-                <svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
-              </span>
-            </div>
-            <span>Servicios</span>
-          </div>
-          <div class="kpi-value">${ind.serviciosMes}</div>
-          <div class="kpi-change positive">
-            <span>+${ind.serviciosNuevos} este mes</span>
+              Nueva Orden
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="App.openModal('modalNuevoCliente')">
+              + Nuevo Cliente
+            </button>
           </div>
         </div>
 
-        <!-- Citas Pendientes -->
-        <div class="kpi-card" onclick="App.navigate('servicios')" style="cursor: pointer;">
-          <div class="kpi-top">
-            <div class="kpi-icon navy">
-              <span class="icon">
-                <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
-              </span>
+        <!-- Tarjetas de Indicadores Principales (KPIs) -->
+        <div class="kpi-grid">
+          <!-- Clientes -->
+          <div class="kpi-card" onclick="App.navigate('clientes')" style="cursor: pointer;">
+            <div class="kpi-top">
+              <div class="kpi-icon blue">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 3s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                </span>
+              </div>
+              <span>Clientes</span>
             </div>
-            <span>Citas pendientes</span>
-          </div>
-          <div class="kpi-value" style="font-size: 26px;">
-            ${ind.citasPendientes} <span style="font-size: 16px; font-weight: 500; color: var(--text-muted);">de ${ind.citasTotalHoy}</span>
-          </div>
-          <div class="kpi-change neutral">
-            <span>Para hoy y mañana</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Resumen Financiero Rápido -->
-      <div class="finance-summary-grid">
-        <div class="finance-card">
-          <div class="finance-card-label ingresos">
-            <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></span>
-            <span>Ingresos</span>
-          </div>
-          <div class="finance-card-amount">RD$ ${ind.ingresosMes.toLocaleString('en-US')}</div>
-          <div class="finance-card-sub text-danger">${ind.ingresosVariacion}% vs. mes anterior</div>
-        </div>
-
-        <div class="finance-card">
-          <div class="finance-card-label egresos">
-            <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M5 15h4v6h6v-6h4l-7-7-7 7zM5 4h14v2H5V4z"/></svg></span>
-            <span>Egresos</span>
-          </div>
-          <div class="finance-card-amount">RD$ ${ind.egresosMes.toLocaleString('en-US')}</div>
-          <div class="finance-card-sub text-danger">+${ind.egresosVariacion}% vs. mes anterior</div>
-        </div>
-
-        <div class="finance-card" style="border-left: 3px solid #00AEEF;">
-          <div class="finance-card-label resultado">
-            <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></span>
-            <span>Resultado neto</span>
-          </div>
-          <div class="finance-card-amount highlight">RD$ ${ind.resultadoNeto.toLocaleString('en-US')}</div>
-          <div class="finance-card-sub text-success">+${ind.resultadoVariacion}% vs. mes anterior</div>
-        </div>
-      </div>
-
-      <!-- ====================================================================
-           GRÁFICO INTERACTIVO DEL DASHBOARD CON FILTROS POR MES Y SERVICIO
-           ==================================================================== -->
-      <div class="card" style="margin-bottom: 24px; padding: 22px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 18px;">
-          <div>
-            <div class="card-title" style="font-size: 17px;">
-              <span class="icon" style="color: var(--color-accent);"><svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></span>
-              <span>Rendimiento de Servicios y Operaciones</span>
-            </div>
-            <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 3px;">
-              Gráfico interactivo con filtros dinámicos por mes, tipo de servicio y equipo
+            <div class="kpi-value">${ind.clientesTotal ?? 0}</div>
+            <div class="kpi-change positive">
+              <span>+${ind.clientesNuevosMes ?? 0} este mes</span>
             </div>
           </div>
 
-          <!-- Filtros Interactivos -->
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-            <!-- Selector de Mes -->
-            <div style="display: flex; flex-direction: column; gap: 3px;">
-              <label style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Mes:</label>
-              <select class="form-select" style="padding: 6px 12px; font-size: 12px; font-weight: 600;" onchange="DashboardModule.setMonth(this.value)">
-                <option value="actual" ${this.activeMonth === 'actual' || this.activeMonth === 'Oct' ? 'selected' : ''}>Mes Actual (${window.DateUtil ? window.DateUtil.getCurrentMonthYearText() : 'Mes en curso'})</option>
-                <option value="todos" ${this.activeMonth === 'todos' ? 'selected' : ''}>Todo el Periodo</option>
-              </select>
+          <!-- Servicios -->
+          <div class="kpi-card" onclick="App.navigate('servicios')" style="cursor: pointer;">
+            <div class="kpi-top">
+              <div class="kpi-icon turquoise">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></svg>
+                </span>
+              </div>
+              <span>Servicios</span>
             </div>
-
-            <!-- Selector de Tipo de Servicio -->
-            <div style="display: flex; flex-direction: column; gap: 3px;">
-              <label style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Servicio:</label>
-              <select class="form-select" style="padding: 6px 12px; font-size: 12px; font-weight: 600;" onchange="DashboardModule.setService(this.value)">
-                <option value="todos" ${this.activeService === 'todos' ? 'selected' : ''}>Todos los Servicios</option>
-                <option value="Mantenimiento" ${this.activeService === 'Mantenimiento' ? 'selected' : ''}>🛠️ Mantenimiento</option>
-                <option value="Reparación" ${this.activeService === 'Reparación' ? 'selected' : ''}>🔧 Reparación</option>
-                <option value="Instalación" ${this.activeService === 'Instalación' ? 'selected' : ''}>⚡ Instalación</option>
-              </select>
+            <div class="kpi-value">${ind.serviciosMes ?? 0}</div>
+            <div class="kpi-change positive">
+              <span>+${ind.serviciosNuevos ?? 0} este mes</span>
             </div>
+          </div>
 
-            <!-- Selector de Tipo de Equipo -->
-            <div style="display: flex; flex-direction: column; gap: 3px;">
-              <label style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Equipo:</label>
-              <select class="form-select" style="padding: 6px 12px; font-size: 12px; font-weight: 600;" onchange="DashboardModule.setEquipment(this.value)">
-                <option value="todos" ${this.activeEquipment === 'todos' ? 'selected' : ''}>Todos los Equipos</option>
-                <option value="Aire Acondicionado" ${this.activeEquipment === 'Aire Acondicionado' ? 'selected' : ''}>❄️ Aire Acondicionado</option>
-                <option value="Nevera" ${this.activeEquipment === 'Nevera' ? 'selected' : ''}>🧊 Nevera</option>
-                <option value="Lavadora" ${this.activeEquipment === 'Lavadora' ? 'selected' : ''}>🧺 Lavadora</option>
-              </select>
+          <!-- Citas Pendientes -->
+          <div class="kpi-card" onclick="App.navigate('servicios')" style="cursor: pointer;">
+            <div class="kpi-top">
+              <div class="kpi-icon navy">
+                <span class="icon">
+                  <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+                </span>
+              </div>
+              <span>Citas pendientes</span>
+            </div>
+            <div class="kpi-value" style="font-size: 26px;">
+              ${ind.citasPendientes ?? 0} <span style="font-size: 16px; font-weight: 500; color: var(--text-muted);">de ${ind.citasTotalHoy ?? 0}</span>
+            </div>
+            <div class="kpi-change neutral">
+              <span>Para hoy y mañana</span>
             </div>
           </div>
         </div>
 
-        <!-- Métricas Rápidas del Filtro Actual -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; background: #F8FAFC; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 20px;">
-          <div>
-            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Servicios Filtrados</span>
-            <div style="font-size: 20px; font-weight: 800; color: var(--color-primary);">${stats.totalServicios} <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">órdenes</span></div>
+        <!-- Resumen Financiero Rápido -->
+        <div class="finance-summary-grid">
+          <div class="finance-card">
+            <div class="finance-card-label ingresos">
+              <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></span>
+              <span>Ingresos</span>
+            </div>
+            <div class="finance-card-amount">RD$ ${Number(ind.ingresosMes || 0).toLocaleString('en-US')}</div>
+            <div class="finance-card-sub text-danger">${ind.ingresosVariacion ?? 0}% vs. mes anterior</div>
           </div>
-          <div>
-            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Facturación Estimada</span>
-            <div style="font-size: 20px; font-weight: 800; color: #0284C7;">RD$ ${stats.totalIngresos.toLocaleString('en-US')}</div>
+
+          <div class="finance-card">
+            <div class="finance-card-label egresos">
+              <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M5 15h4v6h6v-6h4l-7-7-7 7zM5 4h14v2H5V4z"/></svg></span>
+              <span>Egresos</span>
+            </div>
+            <div class="finance-card-amount">RD$ ${Number(ind.egresosMes || 0).toLocaleString('en-US')}</div>
+            <div class="finance-card-sub text-danger">+${ind.egresosVariacion ?? 0}% vs. mes anterior</div>
           </div>
-          <div>
-            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Ticket Promedio</span>
-            <div style="font-size: 20px; font-weight: 800; color: var(--color-success);">RD$ ${stats.ticketPromedio.toLocaleString('en-US')}</div>
+
+          <div class="finance-card" style="border-left: 3px solid #00AEEF;">
+            <div class="finance-card-label resultado">
+              <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></span>
+              <span>Resultado neto</span>
+            </div>
+            <div class="finance-card-amount highlight">RD$ ${Number(ind.resultadoNeto || 0).toLocaleString('en-US')}</div>
+            <div class="finance-card-sub text-success">+${ind.resultadoVariacion ?? 0}% vs. mes anterior</div>
           </div>
         </div>
 
-        <!-- Renderizado del Gráfico SVG Interactivo -->
-        <div style="width: 100%; overflow-x: auto; padding: 6px 0;">
-          ${this.renderChartSVG(stats)}
+        <!-- ====================================================================
+             GRÁFICO INTERACTIVO DEL DASHBOARD CON FILTROS POR MES Y SERVICIO
+             ==================================================================== -->
+        <div class="card" style="margin-bottom: 24px; padding: 22px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 18px;">
+            <div>
+              <div class="card-title" style="font-size: 17px;">
+                <span class="icon" style="color: var(--color-accent);"><svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg></span>
+                <span>Rendimiento de Servicios y Operaciones</span>
+              </div>
+              <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 3px;">
+                Gráfico interactivo con filtros dinámicos por mes, tipo de servicio y equipo
+              </div>
+            </div>
+
+            <!-- Filtros Interactivos -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <!-- Selector de Mes -->
+              <div style="display: flex; flex-direction: column; gap: 3px;">
+                <label style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Mes:</label>
+                <select class="form-select" style="padding: 6px 12px; font-size: 12px; font-weight: 600;" onchange="DashboardModule.setMonth(this.value)">
+                  <option value="actual" ${this.activeMonth === 'actual' || this.activeMonth === 'Oct' ? 'selected' : ''}>Mes Actual (${window.DateUtil ? window.DateUtil.getCurrentMonthYearText() : 'Mes en curso'})</option>
+                  <option value="todos" ${this.activeMonth === 'todos' ? 'selected' : ''}>Todo el Periodo</option>
+                </select>
+              </div>
+
+              <!-- Selector de Tipo de Servicio -->
+              <div style="display: flex; flex-direction: column; gap: 3px;">
+                <label style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Servicio:</label>
+                <select class="form-select" style="padding: 6px 12px; font-size: 12px; font-weight: 600;" onchange="DashboardModule.setService(this.value)">
+                  <option value="todos" ${this.activeService === 'todos' ? 'selected' : ''}>Todos los Servicios</option>
+                  <option value="Mantenimiento" ${this.activeService === 'Mantenimiento' ? 'selected' : ''}>🛠️ Mantenimiento</option>
+                  <option value="Reparación" ${this.activeService === 'Reparación' ? 'selected' : ''}>🔧 Reparación</option>
+                  <option value="Instalación" ${this.activeService === 'Instalación' ? 'selected' : ''}>⚡ Instalación</option>
+                </select>
+              </div>
+
+              <!-- Selector de Tipo de Equipo -->
+              <div style="display: flex; flex-direction: column; gap: 3px;">
+                <label style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Equipo:</label>
+                <select class="form-select" style="padding: 6px 12px; font-size: 12px; font-weight: 600;" onchange="DashboardModule.setEquipment(this.value)">
+                  <option value="todos" ${this.activeEquipment === 'todos' ? 'selected' : ''}>Todos los Equipos</option>
+                  <option value="Aire Acondicionado" ${this.activeEquipment === 'Aire Acondicionado' ? 'selected' : ''}>❄️ Aire Acondicionado</option>
+                  <option value="Nevera" ${this.activeEquipment === 'Nevera' ? 'selected' : ''}>🧊 Nevera</option>
+                  <option value="Lavadora" ${this.activeEquipment === 'Lavadora' ? 'selected' : ''}>🧺 Lavadora</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Métricas Rápidas del Filtro Actual -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; background: #F8FAFC; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 20px;">
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Servicios Filtrados</span>
+              <div style="font-size: 20px; font-weight: 800; color: var(--color-primary);">${safeStats.totalServicios || 0} <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">órdenes</span></div>
+            </div>
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Facturación Estimada</span>
+              <div style="font-size: 20px; font-weight: 800; color: #0284C7;">RD$ ${Number(safeStats.totalIngresos || 0).toLocaleString('en-US')}</div>
+            </div>
+            <div>
+              <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Ticket Promedio</span>
+              <div style="font-size: 20px; font-weight: 800; color: var(--color-success);">RD$ ${Number(safeStats.ticketPromedio || 0).toLocaleString('en-US')}</div>
+            </div>
+          </div>
+
+          <!-- Renderizado del Gráfico SVG Interactivo -->
+          <div style="width: 100%; overflow-x: auto; padding: 6px 0;">
+            ${this.renderChartSVG(safeStats)}
+          </div>
+
+          <!-- Leyenda y Desglose Visual por Equipos y Servicios -->
+          <div style="margin-top: 18px; border-top: 1px dashed var(--border-color); padding-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Desglose por Equipos -->
+            <div>
+              <div style="font-size: 12px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px;">
+                Distribución por Equipos Atendidos:
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                ${safeStats.distribucionEquipos.map(eq => `
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                      <span>${eq.icon || '⚙️'}</span> <strong>${eq.nombre}</strong>
+                    </span>
+                    <span style="color: var(--text-muted); font-weight: 600;">
+                      ${eq.porcentaje || 0}% (${eq.count || 0} serv.)
+                    </span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Desglose por Servicios -->
+            <div>
+              <div style="font-size: 12px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px;">
+                Distribución por Tipo de Trabajo:
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                ${safeStats.distribucionServicios.map(sv => `
+                  <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
+                    <span>${sv.nombre}</span>
+                    <span style="color: var(--color-primary); font-weight: 700;">
+                      ${sv.porcentaje || 0}% (${sv.count || 0})
+                    </span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Leyenda y Desglose Visual por Equipos y Servicios -->
-        <div style="margin-top: 18px; border-top: 1px dashed var(--border-color); padding-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-          <!-- Desglose por Equipos -->
-          <div>
-            <div style="font-size: 12px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px;">
-              Distribución por Equipos Atendidos:
+        <!-- Próximos Mantenimientos -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="icon" style="color: var(--color-accent);"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg></span>
+              <span>Próximos mantenimientos</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              ${stats.distribucionEquipos.map(eq => `
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
-                  <span style="display: flex; align-items: center; gap: 6px;">
-                    <span>${eq.icon}</span> <strong>${eq.nombre}</strong>
-                  </span>
-                  <span style="color: var(--text-muted); font-weight: 600;">
-                    ${eq.porcentaje}% (${eq.count} serv.)
-                  </span>
-                </div>
-              `).join('')}
+            <div class="card-action-link" onclick="App.navigate('recordatorios')">
+              Ver todos
+              <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></span>
             </div>
           </div>
 
-          <!-- Desglose por Servicios -->
-          <div>
-            <div style="font-size: 12px; font-weight: 700; color: var(--color-primary); margin-bottom: 8px;">
-              Distribución por Tipo de Trabajo:
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              ${stats.distribucionServicios.map(sv => `
-                <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
-                  <span>${sv.nombre}</span>
-                  <span style="color: var(--color-primary); font-weight: 700;">
-                    ${sv.porcentaje}% (${sv.count})
-                  </span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Próximos Mantenimientos -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="icon" style="color: var(--color-accent);"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg></span>
-            <span>Próximos mantenimientos</span>
-          </div>
-          <div class="card-action-link" onclick="App.navigate('recordatorios')">
-            Ver todos
-            <span class="icon" style="width: 16px; height: 16px;"><svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg></span>
-          </div>
-        </div>
-
-        <div class="list-container">
-          ${proximos.length === 0 ? `
-            <div style="text-align: center; padding: 32px 16px; background: #F8FAFC; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
-              <span style="font-size: 30px; display: block; margin-bottom: 8px;">📅</span>
-              <div style="font-size: 14.5px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">No hay mantenimientos ni citas agendadas</div>
-              <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px;">Comienza registrando tu primera orden de servicio o cliente.</p>
-              <button class="btn btn-primary btn-sm" onclick="App.openModal('modalNuevaOrden')">+ Agendar Servicio</button>
-            </div>
-          ` : proximos.map(item => `
-            <div class="service-item-card" onclick="App.navigate('servicios')" style="cursor: pointer;">
-              <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: #E0F2FE; color: #0284C7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                  <span class="icon">
-                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-                  </span>
-                </div>
-                <div>
-                  <div style="font-size: 14.5px; font-weight: 700; color: var(--color-primary);">${item.titulo}</div>
-                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-                    📅 ${item.fechaFormato || item.fecha} &nbsp;•&nbsp; ⏰ ${item.hora} &nbsp;•&nbsp; 👤 ${item.clienteNombre}
+          <div class="list-container">
+            ${proximos.length === 0 ? `
+              <div style="text-align: center; padding: 32px 16px; background: #F8FAFC; border-radius: var(--radius-md); border: 1px dashed var(--border-color);">
+                <span style="font-size: 30px; display: block; margin-bottom: 8px;">📅</span>
+                <div style="font-size: 14.5px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">No hay mantenimientos ni citas agendadas</div>
+                <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px;">Comienza registrando tu primera orden de servicio o cliente.</p>
+                <button class="btn btn-primary btn-sm" onclick="App.openModal('modalNuevaOrden')">+ Agendar Servicio</button>
+              </div>
+            ` : proximos.map(item => `
+              <div class="service-item-card" onclick="App.navigate('servicios')" style="cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                  <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: #E0F2FE; color: #0284C7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="icon">
+                      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+                    </span>
+                  </div>
+                  <div>
+                    <div style="font-size: 14.5px; font-weight: 700; color: var(--color-primary);">${item.titulo || 'Servicio'}</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                      📅 ${item.fechaFormato || item.fecha || 'Hoy'} &nbsp;•&nbsp; ⏰ ${item.hora || '9:00 a. m.'} &nbsp;•&nbsp; 👤 ${item.clienteNombre || 'Cliente'}
+                    </div>
                   </div>
                 </div>
+                <div>
+                  <span class="badge badge-programado">${item.estado || 'Programado'}</span>
+                </div>
               </div>
-              <div>
-                <span class="badge badge-programado">${item.estado}</span>
-              </div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    } catch (err) {
+      console.error('Error renderizando dashboard:', err);
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px 20px; margin: 20px 0;">
+          <p style="color: #EF4444; font-weight: 700; margin-bottom: 8px;">Ocurrió un inconveniente al cargar el panel de inicio.</p>
+          <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">${err.message || ''}</p>
+          <button class="btn btn-primary btn-sm" onclick="App.refreshCurrentScreen()">Reintentar</button>
+        </div>
+      `;
+    }
   },
 
   renderChartSVG(stats) {
-    if (stats.totalServicios === 0 && stats.totalIngresos === 0) {
+    if (!stats || (stats.totalServicios === 0 && stats.totalIngresos === 0) || !Array.isArray(stats.series) || stats.series.length === 0) {
       return `
         <div style="text-align: center; padding: 42px 20px; background: #F8FAFC; border-radius: var(--radius-md); border: 1px dashed #CBD5E1;">
           <div style="font-size: 34px; margin-bottom: 8px;">📊</div>
-          <div style="font-size: 15px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">Gráfica en Espera de Datos Reales</div>
+          <div style="font-size: 15px; font-weight: 700; color: var(--color-primary); margin-bottom: 4px;">Gráfica en Espera de Operaciones</div>
           <p style="font-size: 13px; color: var(--text-muted); max-width: 480px; margin: 0 auto 16px auto;">
-            El sistema se encuentra limpio y en blanco para producción. A medida que crees órdenes y cobres facturas, esta gráfica reflejará tus métricas semanales y mensuales automáticamente.
+            El sistema se encuentra listo para registrar órdenes y cobrar facturas. A medida que trabajes con tus clientes, esta gráfica reflejará tus métricas semanales y mensuales automáticamente.
           </p>
           <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn btn-primary btn-sm" onclick="App.openModal('modalNuevaOrden')">+ Registrar Primer Servicio</button>
@@ -307,10 +362,10 @@ const DashboardModule = {
     const items = stats.series;
     
     // Calcular escala máxima de servicios y de ingresos
-    const maxServicios = Math.max(...items.map(i => i.servicios), 5);
-    const maxIngresos = Math.max(...items.map(i => i.ingresos), 10000);
+    const maxServicios = Math.max(...items.map(i => i.servicios || 0), 5);
+    const maxIngresos = Math.max(...items.map(i => i.ingresos || 0), 10000);
 
-    const groupWidth = chartWidth / items.length;
+    const groupWidth = chartWidth / (items.length || 1);
     const barWidth = 26;
 
     return `
@@ -332,11 +387,11 @@ const DashboardModule = {
           const centerX = 50 + (index * groupWidth) + (groupWidth / 2) - 30;
 
           // Altura calculada según el total de servicios
-          const barHeightSrv = Math.max(10, (item.servicios / maxServicios) * 160);
+          const barHeightSrv = Math.max(10, ((item.servicios || 0) / maxServicios) * 160);
           const yPosSrv = 195 - barHeightSrv;
 
           // Altura calculada de ingresos (barra secundaria)
-          const barHeightIng = Math.max(8, (item.ingresos / maxIngresos) * 160);
+          const barHeightIng = Math.max(8, ((item.ingresos || 0) / maxIngresos) * 160);
           const yPosIng = 195 - barHeightIng;
 
           return `
@@ -351,10 +406,10 @@ const DashboardModule = {
                 fill="url(#gradienteTurquesa)"
                 style="cursor: pointer; transition: all 0.2s;"
               >
-                <title>${item.label}: ${item.servicios} servicios realizados (RD$ ${item.ingresos.toLocaleString('en-US')})</title>
+                <title>${item.label}: ${item.servicios || 0} servicios realizados (RD$ ${Number(item.ingresos || 0).toLocaleString('en-US')})</title>
               </rect>
               <text x="${centerX + (barWidth / 2)}" y="${yPosSrv - 5}" font-size="11" font-weight="700" fill="#0284C7" text-anchor="middle">
-                ${item.servicios}
+                ${item.servicios || 0}
               </text>
 
               <!-- Barra 2: Facturación (Azul Marino PUJOLS) -->
@@ -367,10 +422,10 @@ const DashboardModule = {
                 fill="#0A2540"
                 style="cursor: pointer; transition: all 0.2s;"
               >
-                <title>${item.label}: Facturación RD$ ${item.ingresos.toLocaleString('en-US')}</title>
+                <title>${item.label}: Facturación RD$ ${Number(item.ingresos || 0).toLocaleString('en-US')}</title>
               </rect>
               <text x="${centerX + barWidth + 6 + (barWidth / 2)}" y="${yPosIng - 5}" font-size="10" font-weight="700" fill="#0A2540" text-anchor="middle">
-                RD$${Math.round(item.ingresos / 1000)}k
+                RD$${Math.round((item.ingresos || 0) / 1000)}k
               </text>
 
               <!-- Etiqueta del Periodo -->

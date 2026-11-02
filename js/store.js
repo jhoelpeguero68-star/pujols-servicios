@@ -1003,12 +1003,8 @@ class Store {
         if (!Array.isArray(parsed.equipos)) parsed.equipos = [];
         if (!Array.isArray(parsed.servicios)) parsed.servicios = [];
         if (!Array.isArray(parsed.facturas)) parsed.facturas = [];
-        if (!parsed.indicadores || typeof parsed.indicadores !== 'object') {
-          parsed.indicadores = JSON.parse(JSON.stringify(INITIAL_STATE.indicadores));
-        }
-        if (!parsed.finanzas || typeof parsed.finanzas !== 'object') {
-          parsed.finanzas = JSON.parse(JSON.stringify(INITIAL_STATE.finanzas));
-        }
+        parsed.indicadores = Object.assign({}, INITIAL_STATE.indicadores, parsed.indicadores || {});
+        parsed.finanzas = Object.assign({}, INITIAL_STATE.finanzas, parsed.finanzas || {});
         if (!Array.isArray(parsed.finanzas.transacciones)) parsed.finanzas.transacciones = [];
         if (!Array.isArray(parsed.colaSincronizacion)) parsed.colaSincronizacion = [];
 
@@ -1814,11 +1810,12 @@ class Store {
 
   // --- DASHBOARD FILTERED ANALYTICS ---
   getFilteredDashboardStats(mes = 'Oct', tipoServicio = 'todos', tipoEquipo = 'todos') {
-    // Si los datos demo fueron limpiados o la app está operando con datos reales de producción
-    if (this.state.datosLimpiados || (this.state.clientes.length === 0 && this.state.servicios.length === 0)) {
-      const servicios = this.state.servicios || [];
-      const facturas = this.state.facturas || [];
+    const clientes = Array.isArray(this.state.clientes) ? this.state.clientes : [];
+    const servicios = Array.isArray(this.state.servicios) ? this.state.servicios : [];
+    const facturas = Array.isArray(this.state.facturas) ? this.state.facturas : [];
 
+    // Si los datos demo fueron limpiados o la app está operando con datos reales de producción
+    if (this.state.datosLimpiados || (clientes.length === 0 && servicios.length === 0)) {
       let filteredSrv = servicios.filter(s => {
         if (tipoServicio !== 'todos' && s.tipo !== tipoServicio) return false;
         if (tipoEquipo !== 'todos' && !(s.equipoNombre || '').toLowerCase().includes(tipoEquipo.toLowerCase())) return false;
