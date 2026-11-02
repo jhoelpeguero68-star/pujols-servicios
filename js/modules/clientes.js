@@ -163,6 +163,8 @@ const ClientesModule = {
 
     if (bodyEl) {
       const mapLink = cliente.mapUrl || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(cliente.direccion));
+      const waUrl = window.PhoneUtil ? window.PhoneUtil.buildWhatsAppUrl(cliente.whatsapp || cliente.telefono) : `https://wa.me/1${(cliente.whatsapp || cliente.telefono).replace(/\D/g, '')}`;
+      const telDigits = window.PhoneUtil ? window.PhoneUtil.getDigits(cliente.telefono) : cliente.telefono;
 
       bodyEl.innerHTML = `
         <div style="display: flex; align-items: center; justify-content: space-between; background: #F8FAFC; padding: 16px; border-radius: var(--radius-md); margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
@@ -181,14 +183,20 @@ const ClientesModule = {
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <a href="${mapLink}" target="_blank" class="btn btn-sm btn-outline" style="border-color: #EA4335; color: #EA4335;" title="Abrir en Google Maps">
-              📍 Google Maps
+              📍 Maps
             </a>
-            <a href="https://wa.me/1${cliente.whatsapp.replace(/\D/g, '')}" target="_blank" class="btn btn-sm btn-primary" style="background: #25D366; border-color: #25D366;">
-              WhatsApp
+            <a href="${waUrl}" target="_blank" class="btn btn-sm btn-primary" style="background: #25D366; border-color: #25D366;" title="Escribir por WhatsApp">
+              💬 WhatsApp
             </a>
-            <a href="tel:${cliente.telefono}" class="btn btn-sm btn-outline">
-              Llamar
+            <a href="tel:${telDigits}" class="btn btn-sm btn-outline" title="Llamar">
+              📞 Llamar
             </a>
+            <button type="button" class="btn btn-sm btn-outline" style="border-color: var(--color-primary); color: var(--color-primary);" onclick="ClientesModule.openEditCliente('${cliente.id}')" title="Modificar datos del cliente">
+              ✏️ Editar
+            </button>
+            <button type="button" class="btn btn-sm btn-outline" style="border-color: #EF4444; color: #EF4444;" onclick="ClientesModule.confirmDeleteCliente('${cliente.id}')" title="Eliminar cliente">
+              🗑️
+            </button>
           </div>
         </div>
 
@@ -270,6 +278,119 @@ const ClientesModule = {
   openAddEquipoFor(clienteId) {
     this.closeDetail();
     App.openModal('modalNuevoEquipo', { clienteId });
+  },
+
+  openEditCliente(clienteId) {
+    const c = window.store.getClienteById(clienteId);
+    if (!c) return;
+
+    const modalId = 'modalEditarCliente';
+    let modalEl = document.getElementById(modalId);
+    if (!modalEl) {
+      modalEl = document.createElement('div');
+      modalEl.id = modalId;
+      modalEl.className = 'modal-backdrop';
+      document.body.appendChild(modalEl);
+    }
+
+    modalEl.innerHTML = `
+      <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 class="modal-title">✏️ Modificar Datos del Cliente</h3>
+          <button class="modal-close-btn" onclick="App.closeModal('${modalId}')">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+          </button>
+        </div>
+        <form onsubmit="ClientesModule.saveEditCliente('${c.id}', event)">
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Nombre Completo o Empresa:</label>
+              <input type="text" id="editCliNombre" class="form-input" value="${c.nombre.replace(/"/g, '&quot;')}" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Tipo de Cliente:</label>
+                <select id="editCliTipo" class="form-select">
+                  <option value="Residencial" ${c.tipo === 'Residencial' ? 'selected' : ''}>Residencial</option>
+                  <option value="Comercial" ${c.tipo === 'Comercial' ? 'selected' : ''}>Comercial</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teléfono:</label>
+                <input type="tel" id="editCliTelefono" class="form-input" value="${c.telefono || ''}" oninput="window.PhoneUtil && PhoneUtil.formatInput(this)" placeholder="829-725-4450" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">WhatsApp:</label>
+                <input type="tel" id="editCliWhatsapp" class="form-input" value="${c.whatsapp || ''}" oninput="window.PhoneUtil && PhoneUtil.formatInput(this)" placeholder="829-725-4450">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Correo Electrónico:</label>
+                <input type="email" id="editCliCorreo" class="form-input" value="${c.correo || ''}" placeholder="cliente@email.com">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Dirección (Sector, Ciudad):</label>
+              <input type="text" id="editCliDireccion" class="form-input" value="${(c.direccion || '').replace(/"/g, '&quot;')}" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fecha de Registro:</label>
+              <input type="date" id="editCliFecha" class="form-input" value="${c.fechaRegistro ? (c.fechaRegistro.includes('T') ? c.fechaRegistro.split('T')[0] : c.fechaRegistro) : (window.DateUtil ? window.DateUtil.getISODate() : '')}">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('${modalId}')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    App.openModal(modalId);
+  },
+
+  saveEditCliente(clienteId, event) {
+    event.preventDefault();
+    const nombre = document.getElementById('editCliNombre').value.trim();
+    const tipo = document.getElementById('editCliTipo').value;
+    const telefono = document.getElementById('editCliTelefono').value.trim();
+    const whatsapp = document.getElementById('editCliWhatsapp').value.trim() || telefono;
+    const correo = document.getElementById('editCliCorreo').value.trim();
+    const direccion = document.getElementById('editCliDireccion').value.trim();
+    const fechaRegistro = document.getElementById('editCliFecha').value;
+
+    window.store.updateCliente(clienteId, {
+      nombre,
+      tipo,
+      telefono,
+      whatsapp,
+      correo,
+      direccion,
+      fechaRegistro
+    });
+
+    App.closeModal('modalEditarCliente');
+    this.closeDetail();
+    const container = document.getElementById('view-clientes');
+    if (container) this.render(container);
+    alert('✅ Datos del cliente actualizados con éxito.');
+  },
+
+  confirmDeleteCliente(clienteId) {
+    const c = window.store.getClienteById(clienteId);
+    if (!c) return;
+    if (confirm(`¿Está seguro de eliminar al cliente "${c.nombre}"?\n\nEsta acción también desasociará sus equipos registrados.`)) {
+      window.store.deleteCliente(clienteId);
+      this.closeDetail();
+      const container = document.getElementById('view-clientes');
+      if (container) this.render(container);
+      alert('Cliente eliminado con éxito.');
+    }
   }
 };
 

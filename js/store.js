@@ -101,6 +101,96 @@ const DateUtil = {
 };
 window.DateUtil = DateUtil;
 
+// --- UTILIDAD DE TELÉFONOS REPÚBLICA DOMINICANA (NANP +1, 809 / 829 / 849) ---
+const PhoneUtil = {
+  // Extrae solo los dígitos
+  getDigits(phone) {
+    if (!phone) return '';
+    return String(phone).replace(/\D/g, '');
+  },
+
+  // Normaliza el teléfono dominicano para guardarlo y mostrarlo en formato limpio: 829-725-4450
+  // Si el usuario introduce el 1 o +1 internacional (11 dígitos comenzando en 1), remueve el 1 inicial
+  normalizeLocal(phone) {
+    if (!phone) return '';
+    let digits = this.getDigits(phone);
+    if (!digits) return '';
+
+    // Si tiene 11 dígitos y empieza con 1 (ej: 18297254450 o +1-829-725-4450), quitar el 1 sobrante de país
+    if (digits.length === 11 && digits.startsWith('1')) {
+      digits = digits.substring(1);
+    }
+
+    // Formatear a 10 dígitos estándar dominicano (809-XXX-XXXX, 829-XXX-XXXX, 849-XXX-XXXX)
+    if (digits.length === 10) {
+      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+
+    // Si tiene 7 dígitos (número local sin código de área), anteponer 829 por defecto de la empresa
+    if (digits.length === 7) {
+      return `829-${digits.slice(0, 3)}-${digits.slice(3)}`;
+    }
+
+    return String(phone).trim();
+  },
+
+  // Obtiene los dígitos oficiales para WhatsApp wa.me sin prefijos duplicados (ej: 18297254450)
+  getWhatsAppDigits(phone) {
+    if (!phone) return '18297254450';
+    let digits = this.getDigits(phone);
+    if (!digits) return '18297254450';
+
+    // Si ya empieza con 1 y tiene 11 dígitos, ya está completo con código de país NANP/RD
+    if (digits.length === 11 && digits.startsWith('1')) {
+      return digits;
+    }
+
+    // Si tiene 10 dígitos (ej: 8297254450), añadir el 1 de país una sola vez
+    if (digits.length === 10) {
+      return `1${digits}`;
+    }
+
+    // Si tiene 7 dígitos
+    if (digits.length === 7) {
+      return `1829${digits}`;
+    }
+
+    return digits;
+  },
+
+  // Construye la URL oficial de WhatsApp wa.me
+  buildWhatsAppUrl(phone, mensaje = '') {
+    const waDigits = this.getWhatsAppDigits(phone);
+    const base = `https://wa.me/${waDigits}`;
+    return mensaje ? `${base}?text=${encodeURIComponent(mensaje)}` : base;
+  },
+
+  // Formateador en tiempo real para inputs tel (809-XXX-XXXX)
+  formatInput(inputEl) {
+    if (!inputEl) return;
+    const raw = inputEl.value;
+    let digits = raw.replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('1')) {
+      digits = digits.substring(1);
+    }
+    if (digits.length > 10) {
+      digits = digits.substring(0, 10);
+    }
+    let formatted = '';
+    if (digits.length > 0) {
+      formatted = digits.slice(0, 3);
+      if (digits.length > 3) {
+        formatted += '-' + digits.slice(3, 6);
+      }
+      if (digits.length > 6) {
+        formatted += '-' + digits.slice(6, 10);
+      }
+    }
+    inputEl.value = formatted;
+  }
+};
+window.PhoneUtil = PhoneUtil;
+
 const STORAGE_KEY = 'pujols_servicios_prod_v1';
 
 const DEMO_DATA = {
@@ -891,6 +981,24 @@ class Store {
             }
           });
         }
+
+        // Normalizar teléfonos para asegurar formato limpio de República Dominicana (sin '1' delante)
+        if (Array.isArray(parsed.clientes)) {
+          parsed.clientes.forEach(c => {
+            if (c.telefono) c.telefono = PhoneUtil.normalizeLocal(c.telefono);
+            if (c.whatsapp) c.whatsapp = PhoneUtil.normalizeLocal(c.whatsapp);
+          });
+        }
+        if (Array.isArray(parsed.facturas)) {
+          parsed.facturas.forEach(f => {
+            if (f.clienteTelefono) f.clienteTelefono = PhoneUtil.normalizeLocal(f.clienteTelefono);
+          });
+        }
+        if (parsed.recordatorios && Array.isArray(parsed.recordatorios.otrosRecordatorios)) {
+          parsed.recordatorios.otrosRecordatorios.forEach(r => {
+            if (r.telefono) r.telefono = PhoneUtil.normalizeLocal(r.telefono);
+          });
+        }
         return parsed;
       }
     } catch (e) {
@@ -990,8 +1098,8 @@ class Store {
       id: newId,
       nombre: clienteData.nombre,
       iniciales: initials,
-      telefono: clienteData.telefono || '809-555-0000',
-      whatsapp: clienteData.whatsapp || clienteData.telefono || '809-555-0000',
+      telefono: PhoneUtil.normalizeLocal(clienteData.telefono || '829-725-4450'),
+      whatsapp: PhoneUtil.normalizeLocal(clienteData.whatsapp || clienteData.telefono || '829-725-4450'),
       direccion: clienteData.direccion || 'Santo Domingo, RD',
       lat: lat,
       lng: lng,
@@ -1016,6 +1124,69 @@ class Store {
 
     this.saveState();
     return newCliente;
+  }
+
+  updateCliente(clienteId, updatedData) {
+    const c = this.state.clientes.find(item => item.id === clienteId);
+    if (!c) return null;
+
+    if (updatedData.nombre !== undefined) {
+      c.nombre = updatedData.nombre;
+      const parts = c.nombre.trim().split(' ');
+      c.iniciales = parts.length > 1
+        ? (parts[0][0] + parts[1][0]).toUpperCase()
+        : parts[0].substring(0, 2).toUpperCase();
+    }
+    if (updatedData.tipo !== undefined) c.tipo = updatedData.tipo;
+    if (updatedData.telefono !== undefined) c.telefono = PhoneUtil.normalizeLocal(updatedData.telefono);
+    if (updatedData.whatsapp !== undefined) c.whatsapp = PhoneUtil.normalizeLocal(updatedData.whatsapp || updatedData.telefono);
+    if (updatedData.direccion !== undefined) c.direccion = updatedData.direccion;
+    if (updatedData.correo !== undefined) c.correo = updatedData.correo;
+    if (updatedData.fechaRegistro !== undefined) c.fechaRegistro = updatedData.fechaRegistro;
+    if (updatedData.lat !== undefined) c.lat = updatedData.lat;
+    if (updatedData.lng !== undefined) c.lng = updatedData.lng;
+    if (c.lat && c.lng) {
+      c.mapUrl = https://www.google.com/maps?q=,;
+    }
+
+    // Actualizar nombre y teléfono en equipos y servicios asociados
+    this.state.equipos.forEach(eq => {
+      if (eq.clienteId === clienteId) {
+        eq.clienteNombre = c.nombre;
+      }
+    });
+    this.state.servicios.forEach(s => {
+      if (s.clienteId === clienteId) {
+        s.clienteNombre = c.nombre;
+      }
+    });
+
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevoCliente) {
+      window.GoogleSync.sincronizarNuevoCliente(c);
+    }
+    return c;
+  }
+
+  deleteCliente(clienteId) {
+    const idx = this.state.clientes.findIndex(c => c.id === clienteId);
+    if (idx === -1) return false;
+
+    this.state.clientes.splice(idx, 1);
+    if (this.state.indicadores) {
+      this.state.indicadores.clientesTotal = Math.max(0, this.state.clientes.length);
+    }
+
+    // Remover equipos asociados
+    this.state.equipos = this.state.equipos.filter(eq => eq.clienteId !== clienteId);
+
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.eliminarClienteSheet) {
+      window.GoogleSync.eliminarClienteSheet(clienteId);
+    }
+    return true;
   }
 
   // --- EQUIPOS METHODS ---
@@ -1066,6 +1237,48 @@ class Store {
 
     this.saveState();
     return newEquipo;
+  }
+
+  updateEquipo(equipoId, updatedData) {
+    const eq = this.state.equipos.find(e => e.id === equipoId);
+    if (!eq) return null;
+
+    if (updatedData.tipo !== undefined) eq.tipo = updatedData.tipo;
+    if (updatedData.subtipo !== undefined) eq.subtipo = updatedData.subtipo;
+    if (updatedData.capacidad !== undefined) eq.capacidad = updatedData.capacidad;
+    if (updatedData.marca !== undefined) eq.marca = updatedData.marca;
+    if (updatedData.modelo !== undefined) eq.modelo = updatedData.modelo;
+    if (updatedData.ubicacion !== undefined) eq.ubicacion = updatedData.ubicacion;
+    if (updatedData.fechaInstalacion !== undefined) eq.fechaInstalacion = updatedData.fechaInstalacion;
+    if (updatedData.proximoMantenimiento !== undefined) eq.proximoMantenimiento = updatedData.proximoMantenimiento;
+    if (updatedData.estado !== undefined) eq.estado = updatedData.estado;
+
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevoEquipo) {
+      window.GoogleSync.sincronizarNuevoEquipo(eq);
+    }
+    return eq;
+  }
+
+  deleteEquipo(equipoId) {
+    const idx = this.state.equipos.findIndex(e => e.id === equipoId);
+    if (idx === -1) return false;
+
+    const eq = this.state.equipos[idx];
+    this.state.equipos.splice(idx, 1);
+
+    const cliente = this.getClienteById(eq.clienteId);
+    if (cliente) {
+      cliente.equiposCount = Math.max(0, (cliente.equiposCount || 1) - 1);
+    }
+
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.eliminarEquipoSheet) {
+      window.GoogleSync.eliminarEquipoSheet(equipoId);
+    }
+    return true;
   }
 
   // --- SERVICIOS & ÓRDENES METHODS ---
@@ -1125,6 +1338,48 @@ class Store {
     return false;
   }
 
+  updateServicio(servicioId, updatedData) {
+    const srv = this.state.servicios.find(s => s.id === servicioId);
+    if (!srv) return null;
+
+    if (updatedData.tipo !== undefined) srv.tipo = updatedData.tipo;
+    if (updatedData.titulo !== undefined) srv.titulo = updatedData.titulo;
+    if (updatedData.fecha !== undefined) {
+      srv.fecha = updatedData.fecha;
+      srv.fechaFormato = DateUtil.formatDateSafe(srv.fecha);
+    }
+    if (updatedData.hora !== undefined) srv.hora = updatedData.hora;
+    if (updatedData.tecnico !== undefined) srv.tecnico = updatedData.tecnico;
+    if (updatedData.estado !== undefined) srv.estado = updatedData.estado;
+    if (updatedData.costo !== undefined) srv.costo = Number(updatedData.costo) || srv.costo;
+    if (updatedData.descripcion !== undefined) srv.descripcion = updatedData.descripcion;
+
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.sincronizarNuevoServicio) {
+      window.GoogleSync.sincronizarNuevoServicio(srv);
+    }
+    return srv;
+  }
+
+  deleteServicio(servicioId) {
+    const idx = this.state.servicios.findIndex(s => s.id === servicioId);
+    if (idx === -1) return false;
+
+    this.state.servicios.splice(idx, 1);
+    if (this.state.indicadores) {
+      this.state.indicadores.serviciosMes = Math.max(0, this.state.servicios.length);
+      this.state.indicadores.citasPendientes = this.state.servicios.filter(s => s.estado !== 'Completado' && s.estado !== 'Cancelado').length;
+    }
+
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync && window.GoogleSync.eliminarServicioSheet) {
+      window.GoogleSync.eliminarServicioSheet(servicioId);
+    }
+    return true;
+  }
+
   // --- FACTURAS METHODS ---
   getFacturas() {
     return this.state.facturas;
@@ -1139,7 +1394,7 @@ class Store {
       numero: newNumero,
       clienteId: facturaData.clienteId,
       clienteNombre: cliente ? cliente.nombre : (facturaData.clienteNombre || 'Cliente General'),
-      clienteTelefono: cliente ? cliente.telefono : '809-555-0100',
+      clienteTelefono: cliente ? cliente.telefono : (facturaData.clienteTelefono ? PhoneUtil.normalizeLocal(facturaData.clienteTelefono) : '829-725-4450'),
       clienteDireccion: cliente ? cliente.direccion : 'Santo Domingo, RD',
       fecha: DateUtil.getLocalDateString(),
       fechaISO: DateUtil.getISODate(),
@@ -1266,6 +1521,21 @@ class Store {
       if (window.GoogleSync.sincronizarTransacciones) window.GoogleSync.sincronizarTransacciones();
     }
 
+    return true;
+  }
+
+  deleteFactura(numero) {
+    const idx = this.state.facturas.findIndex(f => f.numero === numero);
+    if (idx === -1) return false;
+
+    this.state.facturas.splice(idx, 1);
+    this.recalcularFinanzas();
+    this.saveState();
+
+    if (navigator.onLine && window.GoogleSync) {
+      if (window.GoogleSync.eliminarFacturaSheet) window.GoogleSync.eliminarFacturaSheet(numero);
+      if (window.GoogleSync.sincronizarTransacciones) window.GoogleSync.sincronizarTransacciones();
+    }
     return true;
   }
 

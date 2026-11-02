@@ -758,8 +758,8 @@ const App = {
     const newCliente = window.store.addCliente({
       nombre,
       tipo,
-      telefono,
-      whatsapp,
+      telefono: window.PhoneUtil ? window.PhoneUtil.normalizeLocal(telefono) : telefono,
+      whatsapp: window.PhoneUtil ? window.PhoneUtil.normalizeLocal(whatsapp) : whatsapp,
       direccion,
       lat,
       lng,

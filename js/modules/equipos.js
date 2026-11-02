@@ -129,12 +129,18 @@ const EquiposModule = {
                   </div>
                 </div>
 
-                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                  <button class="btn btn-primary btn-sm btn-block" onclick="App.openModal('modalNuevaOrden', { clienteId: '${eq.clienteId}', equipoId: '${eq.id}' })">
+                <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="App.openModal('modalNuevaOrden', { clienteId: '${eq.clienteId}', equipoId: '${eq.id}' })">
                     + Crear Orden
                   </button>
                   <button class="btn btn-outline btn-sm" onclick="App.navigate('recordatorios')">
                     Recordatorio
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" style="border-color: var(--color-primary); color: var(--color-primary);" onclick="EquiposModule.openEditModal('${eq.id}')" title="Modificar equipo">
+                    ✏️
+                  </button>
+                  <button type="button" class="btn btn-outline btn-sm" style="border-color: #EF4444; color: #EF4444;" onclick="EquiposModule.confirmDelete('${eq.id}')" title="Eliminar equipo">
+                    🗑️
                   </button>
                 </div>
               </div>
@@ -161,6 +167,139 @@ const EquiposModule = {
         input.focus();
         input.selectionStart = input.selectionEnd = input.value.length;
       }
+    }
+  },
+
+  openEditModal(equipoId) {
+    const eq = window.store.getEquipos().find(e => e.id === equipoId);
+    if (!eq) return;
+
+    const modalId = 'modalEditarEquipo';
+    let modalEl = document.getElementById(modalId);
+    if (!modalEl) {
+      modalEl = document.createElement('div');
+      modalEl.id = modalId;
+      modalEl.className = 'modal-backdrop';
+      document.body.appendChild(modalEl);
+    }
+
+    modalEl.innerHTML = `
+      <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 class="modal-title">✏️ Modificar Equipo</h3>
+          <button class="modal-close-btn" onclick="App.closeModal('${modalId}')">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+          </button>
+        </div>
+        <form onsubmit="EquiposModule.saveEdit('${eq.id}', event)">
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Tipo de Equipo:</label>
+                <select id="editEqTipo" class="form-select">
+                  <option value="Aire Acondicionado" ${eq.tipo === 'Aire Acondicionado' ? 'selected' : ''}>Aire Acondicionado</option>
+                  <option value="Nevera" ${eq.tipo === 'Nevera' ? 'selected' : ''}>Nevera</option>
+                  <option value="Lavadora" ${eq.tipo === 'Lavadora' ? 'selected' : ''}>Lavadora</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Estado:</label>
+                <select id="editEqEstado" class="form-select">
+                  <option value="Operativo" ${eq.estado === 'Operativo' ? 'selected' : ''}>Operativo</option>
+                  <option value="En Mantenimiento" ${eq.estado === 'En Mantenimiento' ? 'selected' : ''}>En Mantenimiento</option>
+                  <option value="Requiere Reparación" ${eq.estado === 'Requiere Reparación' ? 'selected' : ''}>Requiere Reparación</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Marca:</label>
+                <input type="text" id="editEqMarca" class="form-input" value="${(eq.marca || '').replace(/"/g, '&quot;')}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Modelo / Serie:</label>
+                <input type="text" id="editEqModelo" class="form-input" value="${(eq.modelo || '').replace(/"/g, '&quot;')}">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Capacidad:</label>
+                <input type="text" id="editEqCapacidad" class="form-input" value="${(eq.capacidad || '').replace(/"/g, '&quot;')}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Subtipo / Tecnología:</label>
+                <input type="text" id="editEqSubtipo" class="form-input" value="${(eq.subtipo || '').replace(/"/g, '&quot;')}">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Ubicación física:</label>
+              <input type="text" id="editEqUbicacion" class="form-input" value="${(eq.ubicacion || '').replace(/"/g, '&quot;')}" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Fecha de Instalación:</label>
+                <input type="date" id="editEqFechaInst" class="form-input" value="${eq.fechaInstalacion || ''}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Próximo Mantenimiento:</label>
+                <input type="date" id="editEqProxMant" class="form-input" value="${eq.proximoMantenimiento || ''}">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('${modalId}')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    App.openModal(modalId);
+  },
+
+  saveEdit(equipoId, event) {
+    event.preventDefault();
+    const tipo = document.getElementById('editEqTipo').value;
+    const estado = document.getElementById('editEqEstado').value;
+    const marca = document.getElementById('editEqMarca').value.trim();
+    const modelo = document.getElementById('editEqModelo').value.trim();
+    const capacidad = document.getElementById('editEqCapacidad').value.trim();
+    const subtipo = document.getElementById('editEqSubtipo').value.trim();
+    const ubicacion = document.getElementById('editEqUbicacion').value.trim();
+    const fechaInstalacion = document.getElementById('editEqFechaInst').value;
+    const proximoMantenimiento = document.getElementById('editEqProxMant').value;
+
+    window.store.updateEquipo(equipoId, {
+      tipo,
+      estado,
+      marca,
+      modelo,
+      capacidad,
+      subtipo,
+      ubicacion,
+      fechaInstalacion,
+      proximoMantenimiento
+    });
+
+    App.closeModal('modalEditarEquipo');
+    const container = document.getElementById('view-equipos');
+    if (container) this.render(container);
+    alert('✅ Equipo actualizado con éxito.');
+  },
+
+  confirmDelete(equipoId) {
+    const eq = window.store.getEquipos().find(e => e.id === equipoId);
+    if (!eq) return;
+
+    if (confirm(`¿Está seguro de eliminar el equipo "${eq.tipo} - ${eq.capacidad} (${eq.ubicacion})"?`)) {
+      window.store.deleteEquipo(equipoId);
+      const container = document.getElementById('view-equipos');
+      if (container) this.render(container);
+      alert('Equipo eliminado.');
     }
   }
 };

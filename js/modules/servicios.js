@@ -154,6 +154,12 @@ const ServiciosModule = {
                 <button class="btn btn-sm btn-primary" onclick="ServiciosModule.facturarOrden('${s.id}')">
                   Facturar
                 </button>
+                <button type="button" class="btn btn-sm btn-outline" style="border-color: var(--color-primary); color: var(--color-primary);" onclick="ServiciosModule.openEditModal('${s.id}')" title="Modificar orden">
+                  ✏️
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" style="border-color: #EF4444; color: #EF4444;" onclick="ServiciosModule.confirmDelete('${s.id}')" title="Eliminar orden">
+                  🗑️
+                </button>
               </div>
             </div>
           </div>
@@ -225,12 +231,135 @@ const ServiciosModule = {
     const srv = window.store.getServicios().find(s => s.id === servicioId);
     if (!srv) return;
     const cliente = window.store.getClienteById(srv.clienteId);
-    const phone = cliente ? (cliente.whatsapp || cliente.telefono).replace(/\D/g, '') : '8095550100';
+    const phone = cliente ? (cliente.whatsapp || cliente.telefono) : '829-725-4450';
     const tratamiento = srv.clienteNombre.includes('&') || srv.clienteNombre.toLowerCase().includes('s.r.l') || srv.clienteNombre.toLowerCase().includes('constructora')
       ? 'Estimados señores de'
       : 'Estimado/a Sr./Sra.';
     const msg = `${tratamiento} ${srv.clienteNombre}, reciba un cordial saludo de PUJOLS Servicios.\n\nLe confirmamos su cita de servicio técnico programada:\n📅 Fecha: ${srv.fechaFormato}\n⏰ Hora: ${srv.hora}\n🔧 Trabajo: ${srv.titulo} (${srv.equipoNombre})\n👨‍🔧 Técnico: ${srv.tecnico}\n\nPor favor indíquenos si este horario le resulta conveniente. ¡Gracias por confiar en PUJOLS Servicios!`;
-    window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    const waUrl = window.PhoneUtil ? window.PhoneUtil.buildWhatsAppUrl(phone, msg) : `https://wa.me/18297254450?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+  },
+
+  openEditModal(servicioId) {
+    const srv = window.store.getServicios().find(s => s.id === servicioId);
+    if (!srv) return;
+
+    const modalId = 'modalEditarServicio';
+    let modalEl = document.getElementById(modalId);
+    if (!modalEl) {
+      modalEl = document.createElement('div');
+      modalEl.id = modalId;
+      modalEl.className = 'modal-backdrop';
+      document.body.appendChild(modalEl);
+    }
+
+    modalEl.innerHTML = `
+      <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-header">
+          <h3 class="modal-title">✏️ Modificar Orden de Servicio</h3>
+          <button class="modal-close-btn" onclick="App.closeModal('${modalId}')">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+          </button>
+        </div>
+        <form onsubmit="ServiciosModule.saveEdit('${srv.id}', event)">
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Tipo de Servicio:</label>
+                <select id="editSrvTipo" class="form-select">
+                  <option value="Mantenimiento" ${srv.tipo === 'Mantenimiento' ? 'selected' : ''}>Mantenimiento</option>
+                  <option value="Reparación" ${srv.tipo === 'Reparación' ? 'selected' : ''}>Reparación</option>
+                  <option value="Instalación" ${srv.tipo === 'Instalación' ? 'selected' : ''}>Instalación</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Estado:</label>
+                <select id="editSrvEstado" class="form-select">
+                  <option value="Programado" ${srv.estado === 'Programado' ? 'selected' : ''}>Programado</option>
+                  <option value="En proceso" ${srv.estado === 'En proceso' ? 'selected' : ''}>En proceso</option>
+                  <option value="Completado" ${srv.estado === 'Completado' ? 'selected' : ''}>Completado</option>
+                  <option value="Cancelado" ${srv.estado === 'Cancelado' ? 'selected' : ''}>Cancelado</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Fecha:</label>
+                <input type="date" id="editSrvFecha" class="form-input" value="${srv.fecha || ''}" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Hora:</label>
+                <input type="time" id="editSrvHora" class="form-input" value="${srv.hora || '09:00'}" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Técnico:</label>
+                <select id="editSrvTecnico" class="form-select">
+                  <option value="George Pujols" ${srv.tecnico === 'George Pujols' ? 'selected' : ''}>George Pujols (Técnico Senior / PUJOLS)</option>
+                  <option value="David Pujols" ${srv.tecnico === 'David Pujols' ? 'selected' : ''}>David Pujols (Refrigeración y A/C)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Costo Estimado (RD$):</label>
+                <input type="number" id="editSrvCosto" class="form-input" value="${srv.costo || 4500}" min="0">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Descripción del trabajo:</label>
+              <textarea id="editSrvDescripcion" class="form-textarea" rows="3">${(srv.descripcion || '').replace(/</g, '&lt;')}</textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="App.closeModal('${modalId}')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    App.openModal(modalId);
+  },
+
+  saveEdit(servicioId, event) {
+    event.preventDefault();
+    const tipo = document.getElementById('editSrvTipo').value;
+    const estado = document.getElementById('editSrvEstado').value;
+    const fecha = document.getElementById('editSrvFecha').value;
+    const hora = document.getElementById('editSrvHora').value;
+    const tecnico = document.getElementById('editSrvTecnico').value;
+    const costo = Number(document.getElementById('editSrvCosto').value) || 0;
+    const descripcion = document.getElementById('editSrvDescripcion').value.trim();
+
+    window.store.updateServicio(servicioId, {
+      tipo,
+      estado,
+      fecha,
+      hora,
+      tecnico,
+      costo,
+      descripcion
+    });
+
+    App.closeModal('modalEditarServicio');
+    const container = document.getElementById('view-servicios');
+    if (container) this.render(container);
+    alert('✅ Orden de servicio actualizada.');
+  },
+
+  confirmDelete(servicioId) {
+    const srv = window.store.getServicios().find(s => s.id === servicioId);
+    if (!srv) return;
+
+    if (confirm(`¿Está seguro de eliminar la orden "${srv.ordenId || srv.id} - ${srv.titulo}"?`)) {
+      window.store.deleteServicio(servicioId);
+      const container = document.getElementById('view-servicios');
+      if (container) this.render(container);
+      alert('Orden eliminada.');
+    }
   }
 };
 

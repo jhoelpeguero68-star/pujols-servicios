@@ -212,7 +212,7 @@ const RecordatoriosModule = {
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Teléfono / WhatsApp:</label>
-                <input type="tel" id="newRecTelefono" class="form-input" placeholder="829-725-4450" required>
+                <input type="tel" id="newRecTelefono" class="form-input" placeholder="829-725-4450" oninput="window.PhoneUtil && PhoneUtil.formatInput(this)" required>
               </div>
               <div class="form-group">
                 <label class="form-label">Fecha del Recordatorio:</label>
@@ -358,7 +358,7 @@ const RecordatoriosModule = {
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Teléfono / WhatsApp:</label>
-                <input type="tel" id="editRecTelefono" class="form-input" value="${item.telefono || ''}" required>
+                <input type="tel" id="editRecTelefono" class="form-input" value="${item.telefono || ''}" oninput="window.PhoneUtil && PhoneUtil.formatInput(this)" required>
               </div>
               <div class="form-group">
                 <label class="form-label">Fecha del Recordatorio:</label>
@@ -562,8 +562,9 @@ const RecordatoriosModule = {
     if (btnSend) {
       btnSend.onclick = () => {
         const textVal = document.getElementById('textoMensajeWA').value;
-        const phone = (eq.clienteTelefono || '829-725-4450').replace(/\D/g, '');
-        window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(textVal)}`, '_blank');
+        const phone = eq.clienteTelefono || '829-725-4450';
+        const waUrl = window.PhoneUtil ? window.PhoneUtil.buildWhatsAppUrl(phone, textVal) : `https://wa.me/18297254450?text=${encodeURIComponent(textVal)}`;
+        window.open(waUrl, '_blank');
         RecordatoriosModule.cerrarMensaje();
       };
     }
@@ -578,8 +579,9 @@ const RecordatoriosModule = {
   },
 
   enviarDirecto(cliente, telefono, mensaje) {
-    const phone = (telefono || '829-725-4450').replace(/\D/g, '');
-    window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(mensaje)}`, '_blank');
+    const phone = telefono || '829-725-4450';
+    const waUrl = window.PhoneUtil ? window.PhoneUtil.buildWhatsAppUrl(phone, mensaje) : `https://wa.me/18297254450?text=${encodeURIComponent(mensaje)}`;
+    window.open(waUrl, '_blank');
   }
 };
 

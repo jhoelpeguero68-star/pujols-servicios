@@ -207,7 +207,7 @@ const ConfiguracionModule = {
   guardarEmpresa() {
     const nombre = document.getElementById('cfgNombre').value;
     const rnc = document.getElementById('cfgRnc').value;
-    const telefono = document.getElementById('cfgTelefono').value;
+    const telefono = window.PhoneUtil ? window.PhoneUtil.normalizeLocal(document.getElementById('cfgTelefono').value) : document.getElementById('cfgTelefono').value;
     const direccion = document.getElementById('cfgDireccion').value;
     const lema = document.getElementById('cfgLema').value;
 
@@ -318,7 +318,7 @@ const ConfiguracionModule = {
 
   guardarConfigGoogle() {
     const gmail = (document.getElementById('cfgGmail').value || '').trim();
-    const whatsappNumero = (document.getElementById('cfgWaNumero').value || '').replace(/\D/g, '');
+    const whatsappNumero = window.PhoneUtil ? window.PhoneUtil.getWhatsAppDigits(document.getElementById('cfgWaNumero').value || '') : (document.getElementById('cfgWaNumero').value || '').replace(/\D/g, '');
     const sheetsUrl = (document.getElementById('cfgSheetsUrl').value || '').trim();
     const driveUrl = (document.getElementById('cfgDriveUrl').value || '').trim();
 

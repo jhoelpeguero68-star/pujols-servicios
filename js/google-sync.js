@@ -324,8 +324,8 @@ const GoogleSync = {
         c.id,
         c.nombre,
         c.tipo || 'Residencial',
-        c.telefono || '',
-        c.whatsapp || '',
+        window.PhoneUtil ? window.PhoneUtil.normalizeLocal(c.telefono) : (c.telefono || ''),
+        window.PhoneUtil ? window.PhoneUtil.normalizeLocal(c.whatsapp) : (c.whatsapp || ''),
         c.correo || '',
         c.direccion || '',
         c.lat || '',
@@ -367,6 +367,32 @@ const GoogleSync = {
     } catch (e) {
       console.warn('Error sincronizando cliente, guardando en cola offline:', e);
       if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('cliente', c);
+    }
+  },
+
+  // Eliminar un cliente de Google Sheets vaciando su fila
+  async eliminarClienteSheet(clienteId) {
+    await this.asegurarTokenValido();
+    if (!this.spreadsheetId || !this.accessToken) return;
+    try {
+      const checkRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Clientes!A2:A`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const existingIndex = checkData.values ? checkData.values.findIndex(r => r[0] === clienteId) : -1;
+        if (existingIndex !== -1) {
+          const rowIndex = existingIndex + 2;
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values:batchClear`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ranges: [`Clientes!A${rowIndex}:K${rowIndex}`] })
+          });
+          console.log(`Cliente eliminado de fila ${rowIndex} en Google Sheets:`, clienteId);
+        }
+      }
+    } catch (e) {
+      console.warn('Error eliminando cliente en Google Sheets:', e);
     }
   },
 
@@ -428,6 +454,31 @@ const GoogleSync = {
     }
   },
 
+  async eliminarServicioSheet(servicioId) {
+    await this.asegurarTokenValido();
+    if (!this.spreadsheetId || !this.accessToken) return;
+    try {
+      const checkRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Servicios!A2:A`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const existingIndex = checkData.values ? checkData.values.findIndex(r => r[0] === servicioId) : -1;
+        if (existingIndex !== -1) {
+          const rowIndex = existingIndex + 2;
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values:batchClear`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ranges: [`Servicios!A${rowIndex}:I${rowIndex}`] })
+          });
+          console.log(`Servicio eliminado de fila ${rowIndex} en Google Sheets:`, servicioId);
+        }
+      }
+    } catch (e) {
+      console.warn('Error eliminando servicio en Google Sheets:', e);
+    }
+  },
+
   // Sincronizar una factura emitida o actualizada hacia Google Sheets
   async sincronizarNuevaFactura(f) {
     await this.asegurarTokenValido();
@@ -480,6 +531,31 @@ const GoogleSync = {
     } catch (e) {
       console.warn('Error al sincronizar factura:', e);
       if (window.store && window.store.addToSyncQueue) window.store.addToSyncQueue('factura', f);
+    }
+  },
+
+  async eliminarFacturaSheet(numero) {
+    await this.asegurarTokenValido();
+    if (!this.spreadsheetId || !this.accessToken) return;
+    try {
+      const checkRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values/Facturas!A2:A`, {
+        headers: { Authorization: `Bearer ${this.accessToken}` }
+      });
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        const existingIndex = checkData.values ? checkData.values.findIndex(r => r[0] === numero) : -1;
+        if (existingIndex !== -1) {
+          const rowIndex = existingIndex + 2;
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${this.spreadsheetId}/values:batchClear`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ranges: [`Facturas!A${rowIndex}:G${rowIndex}`] })
+          });
+          console.log(`Factura eliminada de fila ${rowIndex} en Google Sheets:`, numero);
+        }
+      }
+    } catch (e) {
+      console.warn('Error eliminando factura en Google Sheets:', e);
     }
   },
 
@@ -647,8 +723,8 @@ const GoogleSync = {
               nombre: r[1],
               iniciales: (r[1] || 'NC').substring(0, 2).toUpperCase(),
               tipo: r[2] || 'Residencial',
-              telefono: r[3] || '',
-              whatsapp: r[4] || r[3] || '',
+              telefono: window.PhoneUtil ? window.PhoneUtil.normalizeLocal(r[3]) : (r[3] || ''),
+              whatsapp: window.PhoneUtil ? window.PhoneUtil.normalizeLocal(r[4] || r[3]) : (r[4] || r[3] || ''),
               correo: r[5] || '',
               direccion: r[6] || '',
               lat: r[7] ? Number(r[7]) : null,

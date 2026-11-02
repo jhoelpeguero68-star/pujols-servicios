@@ -280,6 +280,9 @@ const FacturacionModule = {
         <button class="btn btn-primary" onclick="FacturacionModule.printInvoice()">
           🖨️ Imprimir / Guardar PDF
         </button>
+        <button class="btn btn-outline" style="border-color: #EF4444; color: #EF4444;" onclick="FacturacionModule.confirmDelete('${factura.numero}')" title="Eliminar factura">
+          🗑️ Eliminar
+        </button>
       `;
     }
 
@@ -327,12 +330,27 @@ const FacturacionModule = {
   compartirWhatsApp(numero) {
     const factura = window.store.getFacturas().find(f => f.numero === numero);
     if (!factura) return;
-    const phone = (factura.clienteTelefono || '8095550100').replace(/\D/g, '');
+    const phone = factura.clienteTelefono || '829-725-4450';
     const tratamiento = factura.clienteNombre.includes('&') || factura.clienteNombre.toLowerCase().includes('s.r.l') || factura.clienteNombre.toLowerCase().includes('constructora')
       ? 'Estimados señores de'
       : 'Estimado/a Sr./Sra.';
     const msg = `${tratamiento} ${factura.clienteNombre}, reciba un cordial saludo de PUJOLS Servicios.\n\nLe compartimos el detalle de su comprobante/factura ${factura.numero} por un total de RD$ ${factura.total.toLocaleString('en-US')}.\n\n¡Gracias por confiar en nuestros servicios de aire y refrigeración!`;
-    window.open(`https://wa.me/1${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    const waUrl = window.PhoneUtil ? window.PhoneUtil.buildWhatsAppUrl(phone, msg) : `https://wa.me/18297254450?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+  },
+
+  confirmDelete(numero) {
+    if (confirm(`¿Está seguro de eliminar la factura #${numero}?\n\nSi estaba marcada como pagada, se revertirá su impacto en los ingresos de finanzas.`)) {
+      window.store.deleteFactura(numero);
+      this.closeInvoicePreview();
+      const container = document.getElementById('view-facturacion');
+      if (container) this.render(container);
+      if (window.DashboardModule && document.getElementById('view-inicio')) {
+        const dbContainer = document.getElementById('view-inicio');
+        window.DashboardModule.render(dbContainer);
+      }
+      alert('Factura eliminada.');
+    }
   }
 };
 
