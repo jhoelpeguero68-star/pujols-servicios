@@ -136,7 +136,7 @@ const RecordatoriosModule = {
                 </div>
               </div>
               <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
-                <button class="btn btn-sm btn-outline" style="border-color: #25D366; color: #166534; background: #F0FDF4; font-weight: 700;" onclick="RecordatoriosModule.enviarDirecto('${item.cliente ? item.cliente.replace(/'/g, "\\'") : 'Cliente'}', '${item.telefono || '829-725-4450'}', '${item.mensaje ? item.mensaje.replace(/'/g, "\\'") : ''}')" title="Enviar mensaje de WhatsApp">
+                <button class="btn btn-sm btn-outline" style="border-color: #25D366; color: #166534; background: #F0FDF4; font-weight: 700;" onclick="RecordatoriosModule.enviarDirectoPorId('${item.id}')" title="Enviar mensaje de WhatsApp">
                   💬 WhatsApp
                 </button>
                 <button type="button" class="btn-action-edit" title="Modificar recordatorio o fecha" onclick="RecordatoriosModule.abrirModalEditar('${item.id}')" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: var(--color-primary); width: 32px; height: 32px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
@@ -589,6 +589,16 @@ const RecordatoriosModule = {
   cerrarMensaje() {
     const modal = document.getElementById('modalMensajeWhatsApp');
     if (modal) modal.classList.remove('open');
+  },
+
+  enviarDirectoPorId(id) {
+    const list = this.getTimelineRecordatorios();
+    const item = list.find(r => String(r.id) === String(id));
+    if (!item) return;
+    const phone = item.telefono || '829-725-4450';
+    const msg = item.mensaje || `Hola ${item.cliente || ''}, le saludamos de PUJOLS Servicios. Le recordamos su próximo mantenimiento preventivo programado.`;
+    const waUrl = window.PhoneUtil ? window.PhoneUtil.buildWhatsAppUrl(phone, msg) : `https://wa.me/18297254450?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
   },
 
   enviarDirecto(cliente, telefono, mensaje) {

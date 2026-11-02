@@ -686,7 +686,35 @@ const GoogleSync = {
   // Subir todos los datos actuales a la hoja de cálculo
   async subirTodosLosDatosASheet() {
     await this.asegurarTokenValido();
-    if (!window.store || !window.store.state || !this.spreadsheetId || !this.accessToken) return;
+    // Auto-recuperación y verificación inmediata de Store
+    if (!window.store) {
+      if (typeof Store !== 'undefined') {
+        try { window.store = new Store(); } catch (e) { console.warn('Error inicializando Store:', e); }
+      }
+      if (!window.store) {
+        window.store = {
+          state: (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null)) 
+            ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE)) 
+            : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {} },
+          saveState() {
+            try { localStorage.setItem('pujols_servicios_prod_v1', JSON.stringify(this.state)); } catch(e){}
+          }
+        };
+      }
+    }
+    if (!window.store.state) {
+      window.store.state = (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null))
+        ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE))
+        : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {} };
+    }
+    if (!Array.isArray(window.store.state.clientes)) window.store.state.clientes = [];
+    if (!Array.isArray(window.store.state.equipos)) window.store.state.equipos = [];
+    if (!Array.isArray(window.store.state.servicios)) window.store.state.servicios = [];
+    if (!Array.isArray(window.store.state.facturas)) window.store.state.facturas = [];
+    if (!window.store.state.finanzas) window.store.state.finanzas = { transacciones: [], ingresos: 0, egresos: 0, resultadoNeto: 0 };
+    if (!window.store.state.indicadores) window.store.state.indicadores = { clientesTotal: 0, serviciosMes: 0, citasPendientes: 0, ingresosMes: 0, egresosMes: 0, resultadoNeto: 0 };
+
+    if (!this.spreadsheetId || !this.accessToken) return;
     const st = window.store.state;
 
     // 1. Clientes
@@ -794,13 +822,33 @@ const GoogleSync = {
     if (!this.spreadsheetId || !this.accessToken) return;
     if (this.isSyncing) return;
 
-    if (!window.store || !window.store.state) {
-      console.warn('Store no disponible para sincronización.');
-      if (mostrarAlerta) {
-        alert('El sistema local está inicializándose. Por favor intente de nuevo en un segundo.');
+    // Auto-recuperación y verificación inmediata de Store sin alertas bloqueantes
+    if (!window.store) {
+      if (typeof Store !== 'undefined') {
+        try { window.store = new Store(); } catch (e) { console.warn('Error inicializando Store:', e); }
       }
-      return;
+      if (!window.store) {
+        window.store = {
+          state: (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null))
+            ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE))
+            : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {} },
+          saveState() {
+            try { localStorage.setItem('pujols_servicios_prod_v1', JSON.stringify(this.state)); } catch(e){}
+          }
+        };
+      }
     }
+    if (!window.store.state) {
+      window.store.state = (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null))
+        ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE))
+        : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {} };
+    }
+    if (!Array.isArray(window.store.state.clientes)) window.store.state.clientes = [];
+    if (!Array.isArray(window.store.state.equipos)) window.store.state.equipos = [];
+    if (!Array.isArray(window.store.state.servicios)) window.store.state.servicios = [];
+    if (!Array.isArray(window.store.state.facturas)) window.store.state.facturas = [];
+    if (!window.store.state.finanzas) window.store.state.finanzas = { transacciones: [], ingresos: 0, egresos: 0, resultadoNeto: 0 };
+    if (!window.store.state.indicadores) window.store.state.indicadores = { clientesTotal: 0, serviciosMes: 0, citasPendientes: 0, ingresosMes: 0, egresosMes: 0, resultadoNeto: 0 };
 
     this.isSyncing = true;
 

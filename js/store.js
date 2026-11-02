@@ -927,6 +927,8 @@ const INITIAL_STATE = {
   datosLimpiados: true
 };
 
+window.INITIAL_STATE = INITIAL_STATE;
+
 class Store {
   constructor() {
     this.state = this.loadState();
