@@ -1,8 +1,32 @@
 // PUJOLS Servicios - Módulo Configuración
 
 const ConfiguracionModule = {
+  getEmpresaData() {
+    if (window.store && typeof window.store.getEmpresa === 'function') {
+      const emp = window.store.getEmpresa();
+      if (emp) return emp;
+    }
+    if (window.store && window.store.state && window.store.state.empresa) {
+      return window.store.state.empresa;
+    }
+    if (window.INITIAL_STATE && window.INITIAL_STATE.empresa) {
+      return window.INITIAL_STATE.empresa;
+    }
+    return {
+      nombre: "PUJOLS Servicios",
+      subtitulo: "AIRE Y REFRIGERACIÓN",
+      lema: "Servicio confiable, equipos en buenas manos.",
+      rnc: "1-32-45678-9",
+      telefono: "829-725-4450",
+      whatsapp: "829-725-4450",
+      correo: "pujolsservicios@gmail.com",
+      direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
+      moneda: "RD$"
+    };
+  },
+
   render(container) {
-    const empresa = window.store.getEmpresa();
+    const empresa = this.getEmpresaData();
 
     container.innerHTML = `
       <!-- Cabecera de Configuración -->
@@ -211,7 +235,12 @@ const ConfiguracionModule = {
     const direccion = document.getElementById('cfgDireccion').value;
     const lema = document.getElementById('cfgLema').value;
 
-    window.store.updateEmpresa({ nombre, rnc, telefono, direccion, lema });
+    if (window.store && typeof window.store.updateEmpresa === 'function') {
+      window.store.updateEmpresa({ nombre, rnc, telefono, direccion, lema });
+    } else if (window.store && window.store.state) {
+      window.store.state.empresa = Object.assign({}, window.store.state.empresa || {}, { nombre, rnc, telefono, direccion, lema });
+      if (typeof window.store.saveState === 'function') window.store.saveState();
+    }
     this.cerrarEditarEmpresa();
     const container = document.getElementById('view-configuracion');
     if (container) this.render(container);
@@ -222,7 +251,7 @@ const ConfiguracionModule = {
   // Modal Configuración Google Drive / Sheets
   // ============================================================
   abrirConfigGoogle() {
-    const empresa = window.store.getEmpresa();
+    const empresa = this.getEmpresaData();
     const existing = document.getElementById('modalConfigGoogle');
     if (existing) existing.remove();
 
@@ -322,7 +351,12 @@ const ConfiguracionModule = {
     const sheetsUrl = (document.getElementById('cfgSheetsUrl').value || '').trim();
     const driveUrl = (document.getElementById('cfgDriveUrl').value || '').trim();
 
-    window.store.updateEmpresa({ gmail, whatsappNumero, sheetsUrl, driveUrl });
+    if (window.store && typeof window.store.updateEmpresa === 'function') {
+      window.store.updateEmpresa({ gmail, whatsappNumero, sheetsUrl, driveUrl });
+    } else if (window.store && window.store.state) {
+      window.store.state.empresa = Object.assign({}, window.store.state.empresa || {}, { gmail, whatsappNumero, sheetsUrl, driveUrl });
+      if (typeof window.store.saveState === 'function') window.store.saveState();
+    }
     document.getElementById('modalConfigGoogle').remove();
 
     const container = document.getElementById('view-configuracion');
@@ -337,7 +371,12 @@ const ConfiguracionModule = {
 
   sincronizarAhora() {
     const now = (window.DateUtil ? window.DateUtil.getFormatDateText() + ' - ' + window.DateUtil.getLocalTimeString() : new Date().toLocaleDateString('es-DO'));
-    window.store.updateEmpresa({ ultimaSincronizacion: now });
+    if (window.store && typeof window.store.updateEmpresa === 'function') {
+      window.store.updateEmpresa({ ultimaSincronizacion: now });
+    } else if (window.store && window.store.state) {
+      window.store.state.empresa = Object.assign({}, window.store.state.empresa || {}, { ultimaSincronizacion: now });
+      if (typeof window.store.saveState === 'function') window.store.saveState();
+    }
     const container = document.getElementById('view-configuracion');
     if (container) this.render(container);
     if (window.GoogleSync && window.GoogleSync.actualizarTodoDesdeSheet) {

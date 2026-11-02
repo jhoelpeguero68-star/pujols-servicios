@@ -987,18 +987,18 @@ class Store {
         // Normalizar teléfonos para asegurar formato limpio de República Dominicana (sin '1' delante)
         if (Array.isArray(parsed.clientes)) {
           parsed.clientes.forEach(c => {
-            if (c.telefono) c.telefono = PhoneUtil.normalizeLocal(c.telefono);
-            if (c.whatsapp) c.whatsapp = PhoneUtil.normalizeLocal(c.whatsapp);
+            if (c && c.telefono) c.telefono = PhoneUtil.normalizeLocal(c.telefono);
+            if (c && c.whatsapp) c.whatsapp = PhoneUtil.normalizeLocal(c.whatsapp);
           });
         }
         if (Array.isArray(parsed.facturas)) {
           parsed.facturas.forEach(f => {
-            if (f.clienteTelefono) f.clienteTelefono = PhoneUtil.normalizeLocal(f.clienteTelefono);
+            if (f && f.clienteTelefono) f.clienteTelefono = PhoneUtil.normalizeLocal(f.clienteTelefono);
           });
         }
         if (parsed.recordatorios && Array.isArray(parsed.recordatorios.otrosRecordatorios)) {
           parsed.recordatorios.otrosRecordatorios.forEach(r => {
-            if (r.telefono) r.telefono = PhoneUtil.normalizeLocal(r.telefono);
+            if (r && r.telefono) r.telefono = PhoneUtil.normalizeLocal(r.telefono);
           });
         }
         if (!Array.isArray(parsed.clientes)) parsed.clientes = [];
@@ -2072,42 +2072,13 @@ class Store {
   }
 }
 
-// Global Store Instance con inicialización garantizada y a prueba de fallos
+// Global Store Instance con inicialización garantizada y soporte completo de prototipo
 window.Store = Store;
 try {
   window.store = new Store();
 } catch (err) {
-  console.error('Error al inicializar Store:', err);
-  window.store = {
-    state: JSON.parse(JSON.stringify(INITIAL_STATE)),
-    listeners: [],
-    subscribe(listener) {
-      if (typeof listener === 'function') this.listeners.push(listener);
-      return () => {};
-    },
-    notifyListeners() {
-      this.listeners.forEach(l => { try { l(this.state); } catch(e){} });
-    },
-    saveState() {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state)); } catch(e){}
-    },
-    getClientes() { return this.state.clientes || []; },
-    getEquipos() { return this.state.equipos || []; },
-    getServicios() { return this.state.servicios || []; },
-    getFacturas() { return this.state.facturas || []; },
-    getFinanzas() { return this.state.finanzas || { ingresos: 0, egresos: 0, resultadoNeto: 0, transacciones: [] }; },
-    getRecordatorios() { return this.state.recordatorios || { otrosRecordatorios: [] }; },
-    getColaSincronizacion() { return this.state.colaSincronizacion || []; },
-    getFilteredDashboardStats() {
-      return {
-        totalServicios: 0,
-        totalIngresos: 0,
-        ticketPromedio: 0,
-        periodoNombre: 'Producción Real',
-        series: [],
-        distribucionEquipos: [],
-        distribucionServicios: []
-      };
-    }
-  };
+  console.error('Error al inicializar Store con new Store():', err);
+  window.store = Object.create(Store.prototype);
+  window.store.state = JSON.parse(JSON.stringify(INITIAL_STATE));
+  window.store.listeners = [];
 }

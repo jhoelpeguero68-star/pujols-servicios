@@ -167,7 +167,19 @@ const FacturacionModule = {
     const factura = window.store.getFacturas().find(f => f.numero === numero);
     if (!factura) return;
 
-    const empresa = window.store.getEmpresa();
+    const empresa = (window.store && typeof window.store.getEmpresa === 'function')
+      ? window.store.getEmpresa()
+      : ((window.store && window.store.state && window.store.state.empresa) || (window.INITIAL_STATE && window.INITIAL_STATE.empresa) || {
+          nombre: "PUJOLS Servicios",
+          subtitulo: "AIRE Y REFRIGERACIÓN",
+          lema: "Servicio confiable, equipos en buenas manos.",
+          rnc: "1-32-45678-9",
+          telefono: "829-725-4450",
+          whatsapp: "829-725-4450",
+          correo: "pujolsservicios@gmail.com",
+          direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
+          moneda: "RD$"
+        });
     const contentEl = document.getElementById('facturaPreviewContent');
     const footerEl = document.getElementById('facturaPreviewFooter');
 

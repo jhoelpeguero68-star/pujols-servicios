@@ -686,20 +686,18 @@ const GoogleSync = {
   // Subir todos los datos actuales a la hoja de cálculo
   async subirTodosLosDatosASheet() {
     await this.asegurarTokenValido();
-    // Auto-recuperación y verificación inmediata de Store
-    if (!window.store) {
+    // Auto-recuperación y verificación inmediata de Store con soporte de prototipo
+    if (!window.store || typeof window.store.getEmpresa !== 'function') {
       if (typeof Store !== 'undefined') {
-        try { window.store = new Store(); } catch (e) { console.warn('Error inicializando Store:', e); }
-      }
-      if (!window.store) {
-        window.store = {
-          state: (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null)) 
+        try {
+          window.store = new Store();
+        } catch (e) {
+          window.store = Object.create(Store.prototype);
+          window.store.state = (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null)) 
             ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE)) 
-            : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {} },
-          saveState() {
-            try { localStorage.setItem('pujols_servicios_prod_v1', JSON.stringify(this.state)); } catch(e){}
-          }
-        };
+            : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {}, empresa: {} };
+          window.store.listeners = [];
+        }
       }
     }
     if (!window.store.state) {
@@ -823,19 +821,17 @@ const GoogleSync = {
     if (this.isSyncing) return;
 
     // Auto-recuperación y verificación inmediata de Store sin alertas bloqueantes
-    if (!window.store) {
+    if (!window.store || typeof window.store.getEmpresa !== 'function') {
       if (typeof Store !== 'undefined') {
-        try { window.store = new Store(); } catch (e) { console.warn('Error inicializando Store:', e); }
-      }
-      if (!window.store) {
-        window.store = {
-          state: (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null))
+        try {
+          window.store = new Store();
+        } catch (e) {
+          window.store = Object.create(Store.prototype);
+          window.store.state = (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null))
             ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE))
-            : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {} },
-          saveState() {
-            try { localStorage.setItem('pujols_servicios_prod_v1', JSON.stringify(this.state)); } catch(e){}
-          }
-        };
+            : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {}, empresa: {} };
+          window.store.listeners = [];
+        }
       }
     }
     if (!window.store.state) {
