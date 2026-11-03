@@ -1005,6 +1005,7 @@ class Store {
         if (!Array.isArray(parsed.equipos)) parsed.equipos = [];
         if (!Array.isArray(parsed.servicios)) parsed.servicios = [];
         if (!Array.isArray(parsed.facturas)) parsed.facturas = [];
+        parsed.empresa = Object.assign({}, INITIAL_STATE.empresa, parsed.empresa || {});
         parsed.indicadores = Object.assign({}, INITIAL_STATE.indicadores, parsed.indicadores || {});
         parsed.finanzas = Object.assign({}, INITIAL_STATE.finanzas, parsed.finanzas || {});
         if (!Array.isArray(parsed.finanzas.transacciones)) parsed.finanzas.transacciones = [];
@@ -1804,10 +1805,38 @@ class Store {
 
   // --- EMPRESA & CONFIG METHODS ---
   getEmpresa() {
-    return this.state.empresa;
+    if (!this.state || !this.state.empresa) {
+      if (this.state) {
+        this.state.empresa = Object.assign({}, (window.INITIAL_STATE && window.INITIAL_STATE.empresa) || {
+          nombre: "PUJOLS Servicios",
+          subtitulo: "AIRE Y REFRIGERACIÓN",
+          lema: "Servicio confiable, equipos en buenas manos.",
+          rnc: "1-32-45678-9",
+          telefono: "829-725-4450",
+          whatsapp: "829-725-4450",
+          correo: "pujolsservicios@gmail.com",
+          direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
+          moneda: "RD$"
+        });
+      }
+    }
+    return (this.state && this.state.empresa) || (window.INITIAL_STATE && window.INITIAL_STATE.empresa) || {
+      nombre: "PUJOLS Servicios",
+      subtitulo: "AIRE Y REFRIGERACIÓN",
+      lema: "Servicio confiable, equipos en buenas manos.",
+      rnc: "1-32-45678-9",
+      telefono: "829-725-4450",
+      whatsapp: "829-725-4450",
+      correo: "pujolsservicios@gmail.com",
+      direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
+      moneda: "RD$"
+    };
   }
 
   updateEmpresa(empresaData) {
+    if (!this.state.empresa) {
+      this.state.empresa = this.getEmpresa();
+    }
     this.state.empresa = { ...this.state.empresa, ...empresaData };
     this.saveState();
   }
@@ -2068,6 +2097,9 @@ class Store {
     const cantidad = (this.state.colaSincronizacion || []).length;
     this.state.colaSincronizacion = [];
     const now = DateUtil.getFormatDateText() + ' - ' + DateUtil.getLocalTimeString();
+    if (!this.state.empresa) {
+      this.state.empresa = this.getEmpresa();
+    }
     this.state.empresa.ultimaSincronizacion = now;
     this.saveState();
     return cantidad;

@@ -697,34 +697,58 @@ const GoogleSync = {
   },
 
   // Subir todos los datos actuales a la hoja de cálculo
-  async subirTodosLosDatosASheet() {
-    await this.asegurarTokenValido();
-    // Auto-recuperación y verificación inmediata de Store con soporte de prototipo
-    if (!window.store || typeof window.store.getEmpresa !== 'function') {
+    asegurarStoreValido() {
+    if (!window.store || typeof window.store !== 'object') {
       if (typeof Store !== 'undefined') {
         try {
           window.store = new Store();
         } catch (e) {
           window.store = Object.create(Store.prototype);
-          window.store.state = (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null)) 
-            ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE)) 
-            : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {}, empresa: {} };
-          window.store.listeners = [];
         }
+      } else {
+        window.store = {};
       }
     }
-    if (!window.store.state) {
+    if (!window.store.state || typeof window.store.state !== 'object') {
       window.store.state = (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null))
         ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE))
-        : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {} };
+        : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {}, empresa: {} };
     }
     if (!Array.isArray(window.store.state.clientes)) window.store.state.clientes = [];
     if (!Array.isArray(window.store.state.equipos)) window.store.state.equipos = [];
     if (!Array.isArray(window.store.state.servicios)) window.store.state.servicios = [];
     if (!Array.isArray(window.store.state.facturas)) window.store.state.facturas = [];
-    if (!window.store.state.finanzas) window.store.state.finanzas = { transacciones: [], ingresos: 0, egresos: 0, resultadoNeto: 0 };
-    if (!window.store.state.indicadores) window.store.state.indicadores = { clientesTotal: 0, serviciosMes: 0, citasPendientes: 0, ingresosMes: 0, egresosMes: 0, resultadoNeto: 0 };
+    if (!window.store.state.finanzas || typeof window.store.state.finanzas !== 'object') {
+      window.store.state.finanzas = { transacciones: [], ingresos: 0, egresos: 0, resultadoNeto: 0 };
+    }
+    if (!Array.isArray(window.store.state.finanzas.transacciones)) {
+      window.store.state.finanzas.transacciones = [];
+    }
+    if (!window.store.state.indicadores || typeof window.store.state.indicadores !== 'object') {
+      window.store.state.indicadores = { clientesTotal: 0, serviciosMes: 0, citasPendientes: 0, ingresosMes: 0, egresosMes: 0, resultadoNeto: 0 };
+    }
+    if (!window.store.state.empresa || typeof window.store.state.empresa !== 'object') {
+      window.store.state.empresa = Object.assign({}, (window.INITIAL_STATE && window.INITIAL_STATE.empresa) || {
+        nombre: 'PUJOLS Servicios',
+        subtitulo: 'AIRE Y REFRIGERACIÓN',
+        lema: 'Servicio confiable, equipos en buenas manos.',
+        rnc: '1-32-45678-9',
+        telefono: '829-725-4450',
+        whatsapp: '829-725-4450',
+        correo: 'pujolsservicios@gmail.com',
+        direccion: 'Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana',
+        moneda: 'RD$'
+      });
+    }
+    if (!Array.isArray(window.store.listeners)) {
+      window.store.listeners = [];
+    }
+    return window.store;
+  },
 
+  async subirTodosLosDatosASheet() {
+    await this.asegurarTokenValido();
+    this.asegurarStoreValido();
     if (!this.spreadsheetId || !this.accessToken) return;
     const st = window.store.state;
 
@@ -853,33 +877,7 @@ const GoogleSync = {
   async descargarDatosDeSheet(mostrarAlerta = false) {
     if (!this.spreadsheetId || !this.accessToken) return;
     if (this.isSyncing) return;
-
-    // Auto-recuperación y verificación inmediata de Store sin alertas bloqueantes
-    if (!window.store || typeof window.store.getEmpresa !== 'function') {
-      if (typeof Store !== 'undefined') {
-        try {
-          window.store = new Store();
-        } catch (e) {
-          window.store = Object.create(Store.prototype);
-          window.store.state = (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null))
-            ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE))
-            : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {}, empresa: {} };
-          window.store.listeners = [];
-        }
-      }
-    }
-    if (!window.store.state) {
-      window.store.state = (window.INITIAL_STATE || (typeof INITIAL_STATE !== 'undefined' ? INITIAL_STATE : null))
-        ? JSON.parse(JSON.stringify(window.INITIAL_STATE || INITIAL_STATE))
-        : { clientes: [], equipos: [], servicios: [], facturas: [], finanzas: { transacciones: [] }, indicadores: {} };
-    }
-    if (!Array.isArray(window.store.state.clientes)) window.store.state.clientes = [];
-    if (!Array.isArray(window.store.state.equipos)) window.store.state.equipos = [];
-    if (!Array.isArray(window.store.state.servicios)) window.store.state.servicios = [];
-    if (!Array.isArray(window.store.state.facturas)) window.store.state.facturas = [];
-    if (!window.store.state.finanzas) window.store.state.finanzas = { transacciones: [], ingresos: 0, egresos: 0, resultadoNeto: 0 };
-    if (!window.store.state.indicadores) window.store.state.indicadores = { clientesTotal: 0, serviciosMes: 0, citasPendientes: 0, ingresosMes: 0, egresosMes: 0, resultadoNeto: 0 };
-
+    this.asegurarStoreValido();
     this.isSyncing = true;
 
     try {

@@ -225,19 +225,31 @@ const FacturacionModule = {
       const viejo = document.getElementById('modalVisorFactura');
       if (viejo) viejo.remove();
 
-      const empresa = (window.store && typeof window.store.getEmpresa === 'function')
-        ? window.store.getEmpresa()
-        : ((window.store && window.store.state && window.store.state.empresa) || (window.INITIAL_STATE && window.INITIAL_STATE.empresa) || {
-            nombre: "PUJOLS Servicios",
-            subtitulo: "AIRE Y REFRIGERACIÓN",
-            lema: "Servicio confiable, equipos en buenas manos.",
-            rnc: "1-32-45678-9",
-            telefono: "829-725-4450",
-            whatsapp: "829-725-4450",
-            correo: "pujolsservicios@gmail.com",
-            direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
-            moneda: "RD$"
-          });
+      const fallbackEmpresa = {
+        nombre: "PUJOLS Servicios",
+        subtitulo: "AIRE Y REFRIGERACIÓN",
+        lema: "Servicio confiable, equipos en buenas manos.",
+        rnc: "1-32-45678-9",
+        telefono: "829-725-4450",
+        whatsapp: "829-725-4450",
+        correo: "pujolsservicios@gmail.com",
+        direccion: "Av. 27 de Febrero #204, Santo Domingo, Rep. Dominicana",
+        moneda: "RD$"
+      };
+
+      let empresa = null;
+      try {
+        if (window.store && typeof window.store.getEmpresa === 'function') {
+          empresa = window.store.getEmpresa();
+        }
+      } catch (e) { empresa = null; }
+
+      if (!empresa || typeof empresa !== 'object') {
+        empresa = (window.store && window.store.state && window.store.state.empresa) ||
+                  (window.INITIAL_STATE && window.INITIAL_STATE.empresa) ||
+                  fallbackEmpresa;
+      }
+      empresa = Object.assign({}, fallbackEmpresa, empresa || {});
 
       const datosCli = this.resolveClienteFactura(factura);
 
