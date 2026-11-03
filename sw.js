@@ -1,5 +1,5 @@
-// Service Worker for PUJOLS Servicios PWA
-const CACHE_NAME = 'pujols-servicios-v32';
+﻿// Service Worker for PUJOLS Servicios PWA
+const CACHE_NAME = 'pujols-servicios-v33';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -61,7 +61,7 @@ self.addEventListener('fetch', (event) => {
   try {
     const url = new URL(event.request.url);
     if (url.origin !== self.location.origin) {
-      return; // Dejar que el navegador maneje la petición de red normal
+      return; // Dejar que el navegador maneje la peticiÃ³n de red normal
     }
   } catch (e) {
     return;
@@ -79,7 +79,7 @@ self.addEventListener('fetch', (event) => {
         return networkResponse;
       })
       .catch(() => {
-        // En caso de fallo o modo offline, buscar en caché ignorando parámetros de versión (?v=X)
+        // En caso de fallo o modo offline, buscar en cachÃ© ignorando parÃ¡metros de versiÃ³n (?v=X)
         return caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
           if (cachedResponse) {
             return cachedResponse;

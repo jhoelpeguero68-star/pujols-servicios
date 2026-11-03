@@ -1157,7 +1157,7 @@ class Store {
     if (updatedData.lat !== undefined) c.lat = updatedData.lat;
     if (updatedData.lng !== undefined) c.lng = updatedData.lng;
     if (c.lat && c.lng) {
-      c.mapUrl = https://www.google.com/maps?q=,;
+      c.mapUrl = `https://www.google.com/maps?q=${c.lat},${c.lng}`;
     }
 
     // Actualizar nombre y teléfono en equipos y servicios asociados
