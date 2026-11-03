@@ -273,25 +273,35 @@ const ClientesModule = {
         `}
 
         <!-- Facturas emitidas -->
-        <h4 style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 12px;">Facturas (${facturas.length})</h4>
+        <h4 style="font-size: 14px; font-weight: 700; color: var(--color-primary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+          <span>Facturas (${facturas.length})</span>
+          <button class="btn btn-sm btn-soft" onclick="ClientesModule.closeDetail(); App.openModal('modalGenerarFactura', { clienteId: '${cliente.id}' });">
+            + Generar Factura
+          </button>
+        </h4>
         ${facturas.length === 0 ? `
           <p style="font-size: 13px; color: var(--text-muted); font-style: italic;">No tiene facturas generadas.</p>
         ` : `
           <div style="display: flex; flex-direction: column; gap: 8px;">
             ${facturas.map(f => `
-              <div style="padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; cursor: pointer;" onclick="FacturacionModule.openInvoicePreview('${f.numero}')">
+              <div style="padding: 10px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; cursor: pointer;" onclick="FacturacionModule.openInvoicePreview('${f.numero}')">
                 <div>
                   <strong>${f.numero}</strong> • ${f.fecha}
                 </div>
-                <div>
-                  <strong style="margin-right: 12px; color: var(--color-primary);">RD$ ${f.total.toLocaleString('en-US')}</strong>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <strong style="color: var(--color-primary);">RD$ ${f.total.toLocaleString('en-US')}</strong>
                   <span class="badge ${f.estado === 'Pagada' ? 'badge-pagada' : 'badge-pendiente'}">${f.estado}</span>
+                  <button type="button" class="btn btn-sm" style="background: #25D366; color: #FFFFFF; border-color: #25D366; padding: 3px 8px; font-size: 11px; font-weight: 700;" onclick="event.stopPropagation(); FacturacionModule.compartirWhatsApp('${f.numero}')">
+                    💬 Enviar
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline" style="padding: 3px 8px; font-size: 11px;" onclick="event.stopPropagation(); FacturacionModule.openInvoicePreview('${f.numero}')">
+                    👁️ Ver / QR
+                  </button>
                 </div>
               </div>
             `).join('')}
           </div>
-        `}
-      `;
+        `}      `;
     }
 
     const modal = document.getElementById('modalDetalleCliente');

@@ -1409,7 +1409,9 @@ class Store {
       numero: newNumero,
       clienteId: facturaData.clienteId,
       clienteNombre: cliente ? cliente.nombre : (facturaData.clienteNombre || 'Cliente General'),
-      clienteTelefono: cliente ? cliente.telefono : (facturaData.clienteTelefono ? PhoneUtil.normalizeLocal(facturaData.clienteTelefono) : '829-725-4450'),
+      clienteTelefono: facturaData.clienteTelefono
+        ? PhoneUtil.normalizeLocal(facturaData.clienteTelefono)
+        : (cliente ? (cliente.whatsapp || cliente.telefono || '') : ''),
       clienteDireccion: cliente ? cliente.direccion : 'Santo Domingo, RD',
       fecha: DateUtil.getLocalDateString(),
       fechaISO: DateUtil.getISODate(),

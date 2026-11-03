@@ -850,7 +850,10 @@ const App = {
 
   // Formulario: Generar Factura
   setupGenerarFacturaForm(context = {}) {
-    const clientes = window.store.getClientes();
+    const form = document.getElementById('formGenerarFactura');
+    if (form) form.reset();
+
+    const clientes = (window.store && window.store.getClientes) ? (window.store.getClientes() || []) : [];
     const select = document.getElementById('facturaClienteSelect');
     if (select) {
       select.innerHTML = `
@@ -860,6 +863,7 @@ const App = {
             ${c.nombre}
           </option>
         `).join('')}
+        <option value="__nuevo__">➕ Cliente nuevo (escribir nombre)</option>
       `;
     }
 
@@ -872,30 +876,77 @@ const App = {
       const descInput = document.getElementById('facturaConcepto');
       if (descInput) descInput.value = context.concepto;
     }
+
+    this.onFacturaClienteChange(select ? select.value : '');
+  },
+
+  // Al elegir el cliente, cargar automáticamente su teléfono/WhatsApp para poder enviarle la factura
+  onFacturaClienteChange(clienteId) {
+    const nuevoFields = document.getElementById('facturaNuevoClienteFields');
+    const telInput = document.getElementById('facturaClienteTelefono');
+    if (nuevoFields) nuevoFields.style.display = (clienteId === '__nuevo__') ? 'block' : 'none';
+    if (!telInput) return;
+
+    if (clienteId && clienteId !== '__nuevo__' && window.store && window.store.getClienteById) {
+      const c = window.store.getClienteById(clienteId);
+      telInput.value = c ? (c.whatsapp || c.telefono || '') : '';
+    } else {
+      telInput.value = '';
+    }
   },
 
   submitGenerarFactura(event) {
     event.preventDefault();
-    const clienteId = document.getElementById('facturaClienteSelect').value;
+    let clienteId = document.getElementById('facturaClienteSelect').value;
     const concepto = document.getElementById('facturaConcepto').value;
     const monto = Number(document.getElementById('facturaMonto').value) || 0;
     const estado = document.getElementById('facturaEstado').value;
+    const telInput = document.getElementById('facturaClienteTelefono');
+    const telefono = telInput ? telInput.value.trim() : '';
 
     if (!clienteId || monto <= 0) {
       alert('Por favor complete el cliente y un monto válido.');
       return;
     }
 
+    // Registrar cliente nuevo directamente desde la factura
+    if (clienteId === '__nuevo__') {
+      const nombreNuevo = (document.getElementById('facturaNuevoClienteNombre').value || '').trim();
+      const dirNuevo = (document.getElementById('facturaNuevoClienteDireccion').value || '').trim();
+      if (!nombreNuevo) {
+        alert('Por favor escriba el nombre del cliente nuevo.');
+        return;
+      }
+      const nuevo = window.store.addCliente({
+        nombre: nombreNuevo,
+        telefono: telefono,
+        whatsapp: telefono,
+        direccion: dirNuevo || 'Santo Domingo, RD'
+      });
+      clienteId = nuevo.id;
+    } else if (telefono && window.store.getClienteById) {
+      // Si el cliente existente no tenía teléfono (o cambió), guardarlo para futuros envíos
+      const c = window.store.getClienteById(clienteId);
+      const norm = window.PhoneUtil ? window.PhoneUtil.normalizeLocal(telefono) : telefono;
+      if (c && (c.whatsapp || c.telefono || '') !== norm && window.store.updateCliente) {
+        window.store.updateCliente(clienteId, { telefono: c.telefono || norm, whatsapp: norm });
+      }
+    }
+
     const newFac = window.store.addFactura({
       clienteId,
       concepto,
       total: monto,
-      estado
+      estado,
+      clienteTelefono: telefono
     });
 
     this.closeModal('modalGenerarFactura');
     this.navigate('facturacion');
-    FacturacionModule.openInvoicePreview(newFac.numero);
+    // Abrir de inmediato la factura con los botones de enviar por WhatsApp / PDF y el código QR
+    setTimeout(() => {
+      FacturacionModule.openInvoicePreview(newFac.numero);
+    }, 150);
   },
 
   // Formulario: Nueva Transacción (Finanzas)

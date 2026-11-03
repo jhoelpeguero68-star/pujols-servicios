@@ -17,10 +17,10 @@
   <link rel="manifest" href="manifest.json">
 
   <!-- Hojas de Estilo Modulares -->
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/layout.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/print.css">
+  <link rel="stylesheet" href="css/styles.css?v=34">
+  <link rel="stylesheet" href="css/layout.css?v=34">
+  <link rel="stylesheet" href="css/components.css?v=34">
+  <link rel="stylesheet" href="css/print.css?v=34">
   <!-- Google Identity Services SDK Oficial -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -672,7 +672,7 @@
     </div>
   </div>
 
-  <!-- Modal 4: Generar Factura -->
+    <!-- Modal 4: Generar Factura -->
   <div id="modalGenerarFactura" class="modal-backdrop">
     <div class="modal-content">
       <div class="modal-header">
@@ -681,11 +681,27 @@
           <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
         </button>
       </div>
-      <form onsubmit="App.submitGenerarFactura(event)">
+      <form id="formGenerarFactura" onsubmit="App.submitGenerarFactura(event)">
         <div class="modal-body">
           <div class="form-group">
             <label class="form-label">Cliente:</label>
-            <select id="facturaClienteSelect" class="form-select" required></select>
+            <select id="facturaClienteSelect" class="form-select" onchange="App.onFacturaClienteChange(this.value)" required></select>
+          </div>
+
+          <div id="facturaNuevoClienteFields" style="display: none; background: #F8FAFC; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; margin-bottom: 14px;">
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label">Nombre del Cliente:</label>
+              <input type="text" id="facturaNuevoClienteNombre" class="form-input" placeholder="Ej: Carlos Rodríguez / Empresa S.R.L.">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Dirección (Opcional):</label>
+              <input type="text" id="facturaNuevoClienteDireccion" class="form-input" placeholder="Santo Domingo, RD">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Teléfono / WhatsApp del Cliente (para enviar la factura):</label>
+            <input type="tel" id="facturaClienteTelefono" class="form-input" placeholder="809-555-0000" oninput="window.PhoneUtil && PhoneUtil.formatInput(this)">
           </div>
 
           <div class="form-group">
@@ -709,11 +725,12 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline" onclick="App.closeModal('modalGenerarFactura')">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Generar y Previsualizar</button>
+          <button type="submit" class="btn btn-primary">Generar y Ver / Enviar</button>
         </div>
       </form>
     </div>
   </div>
+
 
   <!-- Modal 5: Nueva Transacción (Finanzas) -->
   <div id="modalNuevaTransaccion" class="modal-backdrop">
@@ -765,21 +782,48 @@
     </div>
   </div>
 
+  <!-- Modal 6: Visor Global de Factura PDF y Envío al Cliente -->
+  <div id="modalVisorFactura" class="modal-backdrop">
+    <div class="modal-content modal-lg">
+      <div class="modal-header" id="facturaPreviewHeader">
+        <h3 class="modal-title">Vista Previa de Factura</h3>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <button id="btnHeaderWhatsAppFactura" class="btn btn-sm" style="background: #25D366; color: #FFFFFF; border-color: #25D366; font-weight: 700;" onclick="FacturacionModule.compartirWhatsAppActual()">
+            💬 Enviar al Cliente
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="FacturacionModule.printInvoice()">
+            🖨️ Imprimir / PDF
+          </button>
+          <button class="modal-close-btn" onclick="FacturacionModule.closeInvoicePreview()">
+            <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body" id="facturaPreviewContent">
+        <!-- Dynamic PDF Paper Content -->
+      </div>
+      <div class="modal-footer" id="facturaPreviewFooter">
+        <!-- Dynamic footer actions (WhatsApp, PDF, Estado, Eliminar) -->
+      </div>
+    </div>
+  </div>
+
+
   <!-- Pantalla / Overlay de Login Demostrativa (Móvil y Escritorio) -->
   <div id="loginOverlay" class="login-overlay" style="display: none;"></div>
 
   <!-- Scripts de la Aplicación -->
-  <script src="js/store.js?v=33"></script>
-  <script src="js/google-sync.js?v=33"></script>
-  <script src="js/modules/auth.js?v=33"></script>
-  <script src="js/modules/dashboard.js?v=33"></script>
-  <script src="js/modules/clientes.js?v=33"></script>
-  <script src="js/modules/equipos.js?v=33"></script>
-  <script src="js/modules/servicios.js?v=33"></script>
-  <script src="js/modules/facturacion.js?v=33"></script>
-  <script src="js/modules/finanzas.js?v=33"></script>
-  <script src="js/modules/recordatorios.js?v=33"></script>
-  <script src="js/modules/configuracion.js?v=33"></script>
-  <script src="js/app.js?v=33"></script>
+  <script src="js/store.js?v=34"></script>
+  <script src="js/google-sync.js?v=34"></script>
+  <script src="js/modules/auth.js?v=34"></script>
+  <script src="js/modules/dashboard.js?v=34"></script>
+  <script src="js/modules/clientes.js?v=34"></script>
+  <script src="js/modules/equipos.js?v=34"></script>
+  <script src="js/modules/servicios.js?v=34"></script>
+  <script src="js/modules/facturacion.js?v=34"></script>
+  <script src="js/modules/finanzas.js?v=34"></script>
+  <script src="js/modules/recordatorios.js?v=34"></script>
+  <script src="js/modules/configuracion.js?v=34"></script>
+  <script src="js/app.js?v=34"></script>
 </body>
 </html>
