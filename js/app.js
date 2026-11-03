@@ -983,16 +983,22 @@ const App = {
   // PWA (PROGRESSIVE WEB APP)
   // ==========================================================================
   setupPWA() {
-    // 1. Registrar Service Worker
+    // 1. Registrar Service Worker y forzar actualizaci?n si hay nueva versi?n
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then(reg => {
             console.log('Service Worker de PUJOLS Servicios registrado con alcance:', reg.scope);
+            reg.update(); // Forzar chequeo de nueva versi?n de sw.js inmediatamente
           })
           .catch(err => {
             console.warn('Error al registrar Service Worker:', err);
           });
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          // Si el Service Worker fue reemplazado por uno nuevo, recargar en silencio para usar la versi?n fresca
+          console.log('Nueva versi?n de la app activada');
+        });
       });
     }
 

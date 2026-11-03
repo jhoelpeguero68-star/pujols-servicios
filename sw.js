@@ -1,5 +1,5 @@
 ﻿// Service Worker for PUJOLS Servicios PWA
-const CACHE_NAME = 'pujols-servicios-v35';
+const CACHE_NAME = 'pujols-servicios-v36';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -48,9 +48,8 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Estrategia Network-First con fallback seguro y soporte para query-params (?v=X)
