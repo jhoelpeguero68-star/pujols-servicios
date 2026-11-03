@@ -36,39 +36,6 @@ const FacturacionModule = {
     };
   },
 
-  ensureModalExists() {
-    let modal = document.getElementById('modalVisorFactura');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'modalVisorFactura';
-      modal.className = 'modal-backdrop';
-      modal.innerHTML = `
-        <div class="modal-content modal-lg">
-          <div class="modal-header" id="facturaPreviewHeader">
-            <h3 class="modal-title">Vista Previa de Factura</h3>
-            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-              <button id="btnHeaderWhatsAppFactura" class="btn btn-sm" style="background: #25D366; color: #FFFFFF; border-color: #25D366; font-weight: 700;" onclick="FacturacionModule.compartirWhatsAppActual()">
-                💬 Enviar al Cliente
-              </button>
-              <button class="btn btn-primary btn-sm" onclick="FacturacionModule.printInvoice()">
-                🖨️ Imprimir / PDF
-              </button>
-              <button class="modal-close-btn" onclick="FacturacionModule.closeInvoicePreview()">
-                <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
-              </button>
-            </div>
-          </div>
-          <div class="modal-body" id="facturaPreviewContent"></div>
-          <div class="modal-footer" id="facturaPreviewFooter"></div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-    } else if (modal.parentElement !== document.body) {
-      document.body.appendChild(modal);
-    }
-    return modal;
-  },
-
   render(container) {
     if (!container) return;
 
@@ -242,11 +209,48 @@ const FacturacionModule = {
 
   openInvoicePreview(numero) {
     const facturas = (window.store && window.store.getFacturas) ? (window.store.getFacturas() || []) : [];
-    const factura = facturas.find(f => f && f.numero === numero);
-    if (!factura) return;
+    // Comparación flexible (string vs número, trim) para encontrar siempre la factura
+    const numBuscado = String(numero || '').trim().toLowerCase();
+    const factura = facturas.find(f => f && String(f.numero || '').trim().toLowerCase() === numBuscado) ||
+                    facturas.find(f => f && f.numero == numero);
+    if (!factura) {
+      console.warn('Factura no encontrada para visor:', numero);
+      alert('No se pudo encontrar la factura No. ' + numero);
+      return;
+    }
 
-    this.currentPreviewNumero = numero;
-    const modal = this.ensureModalExists();
+    this.currentPreviewNumero = factura.numero;
+
+    // Buscar o reubicar el modal directamente en document.body para que quede en el nivel superior absoluto
+    let modal = document.getElementById('modalVisorFactura');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modalVisorFactura';
+      modal.className = 'modal-backdrop';
+      modal.innerHTML = `
+        <div class="modal-content modal-lg">
+          <div class="modal-header" id="facturaPreviewHeader">
+            <h3 class="modal-title">Vista Previa de Factura</h3>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+              <button id="btnHeaderWhatsAppFactura" class="btn btn-sm" style="background: #25D366; color: #FFFFFF; border-color: #25D366; font-weight: 700;" onclick="FacturacionModule.compartirWhatsAppActual()">
+                💬 Enviar al Cliente
+              </button>
+              <button class="btn btn-primary btn-sm" onclick="FacturacionModule.printInvoice()">
+                🖨️ Imprimir / PDF
+              </button>
+              <button class="modal-close-btn" onclick="FacturacionModule.closeInvoicePreview()">
+                <span class="icon"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></span>
+              </button>
+            </div>
+          </div>
+          <div class="modal-body" id="facturaPreviewContent"></div>
+          <div class="modal-footer" id="facturaPreviewFooter"></div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    } else if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
 
     const empresa = (window.store && typeof window.store.getEmpresa === 'function')
       ? window.store.getEmpresa()
@@ -419,13 +423,22 @@ const FacturacionModule = {
       `;
     }
 
-    if (modal) modal.classList.add('open');
+    // Activar clase open y forzar estilos de visualizacion directa para moviles
+    modal.classList.add('open');
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.zIndex = '2000';
+    document.body.style.overflow = 'hidden';
   },
 
   closeInvoicePreview() {
     this.currentPreviewNumero = null;
     const modal = document.getElementById('modalVisorFactura');
-    if (modal) modal.classList.remove('open');
+    if (modal) {
+      modal.classList.remove('open');
+      modal.style.display = 'none';
+    }
+    document.body.style.overflow = '';
   },
 
   printInvoice() {
@@ -462,7 +475,9 @@ const FacturacionModule = {
 
   compartirWhatsApp(numero) {
     const facturas = (window.store && window.store.getFacturas) ? (window.store.getFacturas() || []) : [];
-    const factura = facturas.find(f => f && f.numero === numero);
+    const numBuscado = String(numero || '').trim().toLowerCase();
+    const factura = facturas.find(f => f && String(f.numero || '').trim().toLowerCase() === numBuscado) ||
+                    facturas.find(f => f && f.numero == numero);
     if (!factura) return;
 
     const datosCli = this.resolveClienteFactura(factura);
